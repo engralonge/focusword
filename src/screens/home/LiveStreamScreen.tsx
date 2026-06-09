@@ -12,6 +12,7 @@ import { Card } from '@/components/ui/Card';
 import { Text } from '@/components/ui/Text';
 import { LiveBadge } from '@/components/live/LiveBadge';
 import { LiveRoomView } from '@/components/live/LiveRoomView';
+import { LiveBibleWorkspace } from '@/components/live/LiveBibleWorkspace';
 import { Button } from '@/components/ui/Button';
 import type { LiveStackParamList } from '@/navigation/types';
 import type { LiveMessage, LiveStageRequest, LiveStream } from '@/types';
@@ -272,6 +273,11 @@ export function LiveStreamScreen() {
             isHost={credentials.isHost}
             canPublish={credentials.canPublish}
             onParticipantCount={setParticipantCount}
+            onError={setError}
+          />
+          <LiveBibleWorkspace
+            streamId={stream.id}
+            isHost={stream.isHost}
             onError={setError}
           />
           {stream.isHost ? (

@@ -3,7 +3,7 @@
 ## 1. Supabase
 
 1. Link the production project with the Supabase CLI.
-2. Apply migrations `001` through `006` in numeric order.
+2. Apply all migrations in `supabase/migrations` in numeric order.
 3. Enable email verification.
 4. Add these Auth redirect URLs:
    - `focusword://auth/callback`
@@ -29,6 +29,7 @@ supabase secrets set \
 supabase functions deploy summarize-passage
 supabase functions deploy bible-content
 supabase functions deploy livekit-token
+supabase functions deploy livekit-stage
 supabase functions deploy livekit-webhook --no-verify-jwt
 supabase functions deploy delete-account
 ```
@@ -79,8 +80,9 @@ On physical iOS and Android devices, verify:
 - sign-up, email verification, password reset, sign-out, and account deletion;
 - Bible browsing, provider copyright, search, notes, highlights, bookmarks, and summaries;
 - community posts, comments, reactions, prayers, and moderation policies;
-- host and attendee LiveKit connections, camera/microphone permissions, chat, reminders,
-  deep links, participant counts, and room completion;
+- host and attendee LiveKit connections, moderated guest camera/microphone permissions,
+  synchronized live Scripture, translation changes, verse focus, shared AI insight, chat,
+  reminders, deep links, participant counts, and room completion;
 - dark/light themes, offline fallback passages, screen-reader labels, and small screens.
 
 Local Android compilation additionally requires a JDK and Android SDK. When those are not

@@ -54,6 +54,18 @@ export type LiveStageRequest = {
   updatedAt: string;
 };
 
+export type LiveBibleWorkspace = {
+  streamId: string;
+  book: string;
+  chapter: number;
+  translation: import('@/types/bible').BibleTranslation;
+  activeVerse?: number;
+  isVisible: boolean;
+  summary?: string;
+  summaryReference?: string;
+  updatedAt: string;
+};
+
 export type BiblePassage = {
   book: string;
   chapter: number;

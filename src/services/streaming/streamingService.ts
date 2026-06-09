@@ -1,10 +1,12 @@
 import type {
   LiveMessage,
+  LiveBibleWorkspace,
   LiveStageRequest,
   LiveStageStatus,
   LiveStream,
   LiveStreamStatus,
 } from '@/types';
+import type { BibleTranslation } from '@/types/bible';
 import { getSupabaseClient } from '@/services/supabase/client';
 import { validateLiveStudy } from '@/utils/live';
 
@@ -223,6 +225,84 @@ export function subscribeToLiveStage(
         event: '*',
         schema: 'public',
         table: 'live_stage_requests',
+        filter: `stream_id=eq.${streamId}`,
+      },
+      onChange,
+    )
+    .subscribe();
+  return () => {
+    void supabase.removeChannel(channel);
+  };
+}
+
+function mapLiveBibleWorkspace(row: Record<string, unknown>): LiveBibleWorkspace {
+  return {
+    streamId: String(row.stream_id),
+    book: String(row.book),
+    chapter: Number(row.chapter),
+    translation: row.translation as BibleTranslation,
+    activeVerse:
+      typeof row.active_verse === 'number' ? row.active_verse : undefined,
+    isVisible: Boolean(row.is_visible),
+    summary: typeof row.summary === 'string' ? row.summary : undefined,
+    summaryReference:
+      typeof row.summary_reference === 'string' ? row.summary_reference : undefined,
+    updatedAt: String(row.updated_at),
+  };
+}
+
+export async function fetchLiveBibleWorkspace(
+  streamId: string,
+): Promise<LiveBibleWorkspace | null> {
+  const { supabase } = await requireUser();
+  const { data, error } = await supabase
+    .from('live_bible_workspaces')
+    .select(
+      'stream_id, book, chapter, translation, active_verse, is_visible, summary, summary_reference, updated_at',
+    )
+    .eq('stream_id', streamId)
+    .maybeSingle();
+  if (error) {
+    throw new Error(error.message);
+  }
+  return data ? mapLiveBibleWorkspace(data as Record<string, unknown>) : null;
+}
+
+export async function saveLiveBibleWorkspace(
+  workspace: Omit<LiveBibleWorkspace, 'updatedAt'>,
+): Promise<void> {
+  const { supabase } = await requireUser();
+  const { error } = await supabase.from('live_bible_workspaces').upsert({
+    stream_id: workspace.streamId,
+    book: workspace.book,
+    chapter: workspace.chapter,
+    translation: workspace.translation,
+    active_verse: workspace.activeVerse ?? null,
+    is_visible: workspace.isVisible,
+    summary: workspace.summary ?? null,
+    summary_reference: workspace.summaryReference ?? null,
+  });
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
+export function subscribeToLiveBibleWorkspace(
+  streamId: string,
+  onChange: () => void,
+): (() => void) | undefined {
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    return undefined;
+  }
+  const channel = supabase
+    .channel(`live-bible:${streamId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'live_bible_workspaces',
         filter: `stream_id=eq.${streamId}`,
       },
       onChange,

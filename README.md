@@ -10,7 +10,8 @@ Bible study live streaming app built with **React Native**, **Expo**, **NativeWi
 - NativeWind (Tailwind) styling with light / dark / system theme
 - Supabase email auth with verification and password recovery
 - Owned community posts, comments, reactions, prayer requests, and prayer support
-- LiveKit-powered native study rooms with host camera/microphone controls and persistent chat
+- LiveKit-powered native study rooms with moderated guest video, persistent chat, and a
+  synchronized Scripture workspace for host-led passages, highlights, translations, and AI insight
 - Scheduled studies with local reminders and notification deep links
 - Moderator-ready row-level security policies
 - EAS development, preview, and production build profiles
@@ -109,10 +110,13 @@ supabase secrets set LIVEKIT_API_KEY=... LIVEKIT_API_SECRET=...
 supabase functions deploy livekit-token livekit-webhook delete-account
 ```
 
-Apply `supabase/migrations/005_live_study_platform.sql` before enabling the feature. Hosts
-can schedule, start, and end rooms; attendees receive subscribe-only room tokens. Chat is
-stored in Supabase with row-level security. Reminder notifications are scheduled locally
-on each attendee's device. In LiveKit Cloud, configure the signed webhook URL as
+Apply the live-study migrations through `009_live_bible_workspace.sql` before enabling the
+feature. Hosts can schedule, start, and end rooms; attendees can request a moderated place
+on the guest stage. Chat and shared Scripture state are stored in Supabase with row-level
+security. The live Scripture workspace synchronizes the host's passage, translation,
+focused verse, and AI-assisted insight without storing licensed Bible text. Reminder
+notifications are scheduled locally on each attendee's device. In LiveKit Cloud, configure
+the signed webhook URL as
 `https://YOUR_PROJECT.supabase.co/functions/v1/livekit-webhook` so participant counts stay
 synchronized.
 
