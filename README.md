@@ -57,7 +57,7 @@ AI requests are handled by the authenticated `summarize-passage` Supabase Edge F
 Never place an AI provider key in an `EXPO_PUBLIC_` variable. Configure the server secret instead:
 
 ```bash
-supabase secrets set XAI_API_KEY=... XAI_MODEL=grok-3-mini
+supabase secrets set XAI_API_KEY=... XAI_MODEL=grok-4.3
 supabase functions deploy summarize-passage
 ```
 

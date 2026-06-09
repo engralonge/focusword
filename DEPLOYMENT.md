@@ -13,7 +13,7 @@
 ```bash
 supabase secrets set \
   XAI_API_KEY=... \
-  XAI_MODEL=grok-3-mini \
+  XAI_MODEL=grok-4.3 \
   API_BIBLE_KEY=... \
   API_BIBLE_KJV_ID=... \
   API_BIBLE_NIV_ID=... \

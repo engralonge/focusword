@@ -60,7 +60,7 @@ Deno.serve(async (request) => {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: Deno.env.get('XAI_MODEL') ?? 'grok-3-mini',
+      model: Deno.env.get('XAI_MODEL') ?? 'grok-4.3',
       temperature: 0.3,
       messages: [
         {
