@@ -1,0 +1,1 @@
+export { BibleReaderScreen as PassageReaderScreen } from '@/screens/bible/BibleReaderScreen';

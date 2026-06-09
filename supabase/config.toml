@@ -1,0 +1,16 @@
+project_id = "focusword"
+
+[functions.summarize-passage]
+verify_jwt = true
+
+[functions.bible-content]
+verify_jwt = true
+
+[functions.livekit-token]
+verify_jwt = true
+
+[functions.livekit-webhook]
+verify_jwt = false
+
+[functions.delete-account]
+verify_jwt = true

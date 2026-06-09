@@ -1,0 +1,31 @@
+import {
+  normalizeEmail,
+  validateEmail,
+  validatePassword,
+  validatePasswordConfirmation,
+  validateProfile,
+} from '@/utils/auth';
+
+describe('auth domain validation', () => {
+  it('normalizes and validates email addresses', () => {
+    expect(normalizeEmail('  Reader@Example.COM ')).toBe('reader@example.com');
+    expect(validateEmail('reader@example.com')).toBeNull();
+    expect(validateEmail('reader@localhost')).toBe('Enter a valid email address.');
+    expect(validateEmail('reader example.com')).toBe('Enter a valid email address.');
+  });
+
+  it('enforces password length and confirmation', () => {
+    expect(validatePassword('short')).toContain('8 characters');
+    expect(validatePassword('long-enough')).toBeNull();
+    expect(validatePasswordConfirmation('long-enough', 'different')).toBe(
+      'Passwords do not match.',
+    );
+    expect(validatePasswordConfirmation('long-enough', 'long-enough')).toBeNull();
+  });
+
+  it('enforces profile limits', () => {
+    expect(validateProfile('A')).toContain('between 2 and 80');
+    expect(validateProfile('Reader', 'A'.repeat(281))).toContain('280');
+    expect(validateProfile('Reader', 'Learning together.')).toBeNull();
+  });
+});

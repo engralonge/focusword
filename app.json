@@ -1,0 +1,66 @@
+{
+  "expo": {
+    "name": "FocusWord",
+    "slug": "focusword",
+    "owner": "frankalonge",
+    "scheme": "focusword",
+    "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/6d365de0-f73e-4198-a944-946f7da79dec"
+    },
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.focusword.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "FocusWord uses your camera when you host or join an interactive live Bible study.",
+        "NSMicrophoneUsageDescription": "FocusWord uses your microphone when you host or join an interactive live Bible study."
+      },
+      "bitcode": false
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0F1419",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "package": "com.focusword.app",
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO"
+      ],
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-dev-client",
+      "@livekit/react-native-expo-plugin",
+      "@config-plugins/react-native-webrtc",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/android-icon-monochrome.png",
+          "color": "#C9A227",
+          "defaultChannel": "live-study-reminders"
+        }
+      ],
+      "@react-native-community/datetimepicker",
+      "expo-font"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "6d365de0-f73e-4198-a944-946f7da79dec"
+      }
+    }
+  }
+}

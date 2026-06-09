@@ -1,0 +1,254 @@
+import type { LiveMessage, LiveStream, LiveStreamStatus } from '@/types';
+import { getSupabaseClient } from '@/services/supabase/client';
+import { validateLiveStudy } from '@/utils/live';
+
+async function requireUser() {
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    throw new Error('Supabase is not configured.');
+  }
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data.user) {
+    throw new Error('Your session has expired. Sign in again.');
+  }
+  return { supabase, user: data.user };
+}
+
+async function profileNames(
+  supabase: NonNullable<ReturnType<typeof getSupabaseClient>>,
+  ids: string[],
+) {
+  if (!ids.length) {
+    return new Map<string, string>();
+  }
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, display_name')
+    .in('id', [...new Set(ids)]);
+  if (error) {
+    throw new Error(error.message);
+  }
+  return new Map(
+    (data ?? []).map((profile) => [
+      profile.id,
+      profile.display_name?.trim() || 'Community member',
+    ]),
+  );
+}
+
+export async function fetchLiveStreams(): Promise<LiveStream[]> {
+  const { supabase, user } = await requireUser();
+  const { data: rows, error } = await supabase
+    .from('live_streams')
+    .select(
+      'id, title, description, host_id, room_name, status, viewer_count, scheduled_at, created_at, updated_at',
+    )
+    .order('created_at', { ascending: false });
+  if (error) {
+    throw new Error(error.message);
+  }
+  if (!rows?.length) {
+    return [];
+  }
+
+  const [names, reminders] = await Promise.all([
+    profileNames(supabase, rows.map((row) => row.host_id)),
+    supabase.from('live_reminders').select('stream_id').eq('user_id', user.id),
+  ]);
+  if (reminders.error) {
+    throw new Error(reminders.error.message);
+  }
+  const remindedIds = new Set((reminders.data ?? []).map((item) => item.stream_id));
+
+  return rows.map((row) => ({
+    id: row.id,
+    title: row.title,
+    description: row.description ?? undefined,
+    hostId: row.host_id,
+    hostName: names.get(row.host_id) ?? 'Host',
+    roomName: row.room_name,
+    status: row.status as LiveStreamStatus,
+    viewerCount: row.viewer_count ?? 0,
+    scheduledAt: row.scheduled_at ?? undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    isHost: row.host_id === user.id,
+    reminderSet: remindedIds.has(row.id),
+  }));
+}
+
+export async function fetchStreamById(id: string): Promise<LiveStream | null> {
+  const streams = await fetchLiveStreams();
+  return streams.find((stream) => stream.id === id) ?? null;
+}
+
+export async function createLiveStream(input: {
+  title: string;
+  description?: string;
+  scheduledAt?: string;
+  startNow: boolean;
+}): Promise<string> {
+  const { supabase, user } = await requireUser();
+  validateLiveStudy(input);
+  const title = input.title.trim();
+  const description = input.description?.trim();
+
+  const roomName = `focusword-${user.id}-${Date.now()}`;
+  const { data, error } = await supabase
+    .from('live_streams')
+    .insert({
+      title,
+      description: description || null,
+      host_id: user.id,
+      room_name: roomName,
+      status: input.startNow ? 'live' : 'scheduled',
+      scheduled_at: input.startNow ? null : input.scheduledAt,
+    })
+    .select('id')
+    .single();
+  if (error || !data) {
+    throw new Error(error?.message ?? 'Could not create the live study.');
+  }
+  return data.id;
+}
+
+export async function updateStreamStatus(
+  streamId: string,
+  status: LiveStreamStatus,
+): Promise<void> {
+  const { supabase } = await requireUser();
+  const { error } = await supabase
+    .from('live_streams')
+    .update({ status })
+    .eq('id', streamId);
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
+export async function deleteLiveStream(streamId: string): Promise<void> {
+  const { supabase } = await requireUser();
+  const { error } = await supabase.from('live_streams').delete().eq('id', streamId);
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
+export async function getLiveKitCredentials(streamId: string): Promise<{
+  serverUrl: string;
+  token: string;
+  isHost: boolean;
+}> {
+  const { supabase } = await requireUser();
+  const { data, error } = await supabase.functions.invoke<{
+    serverUrl?: string;
+    token?: string;
+    isHost?: boolean;
+    error?: string;
+  }>('livekit-token', { body: { streamId } });
+  if (error || !data?.serverUrl || !data.token) {
+    throw new Error(data?.error ?? error?.message ?? 'Could not join the live room.');
+  }
+  return {
+    serverUrl: data.serverUrl,
+    token: data.token,
+    isHost: Boolean(data.isHost),
+  };
+}
+
+export async function fetchLiveMessages(streamId: string): Promise<LiveMessage[]> {
+  const { supabase, user } = await requireUser();
+  const { data, error } = await supabase
+    .from('live_messages')
+    .select('id, stream_id, user_id, body, created_at')
+    .eq('stream_id', streamId)
+    .eq('status', 'published')
+    .order('created_at', { ascending: true })
+    .limit(200);
+  if (error) {
+    throw new Error(error.message);
+  }
+  const rows = data ?? [];
+  const names = await profileNames(supabase, rows.map((row) => row.user_id));
+  return rows.map((row) => ({
+    id: row.id,
+    streamId: row.stream_id,
+    userId: row.user_id,
+    authorName: names.get(row.user_id) ?? 'Member',
+    body: row.body,
+    isOwner: row.user_id === user.id,
+    createdAt: row.created_at,
+  }));
+}
+
+export async function sendLiveMessage(streamId: string, body: string): Promise<void> {
+  const { supabase, user } = await requireUser();
+  const trimmed = body.trim();
+  if (!trimmed || trimmed.length > 1000) {
+    throw new Error('Messages must be between 1 and 1,000 characters.');
+  }
+  const { error } = await supabase.from('live_messages').insert({
+    stream_id: streamId,
+    user_id: user.id,
+    body: trimmed,
+  });
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
+export function subscribeToLiveMessages(
+  streamId: string,
+  onChange: () => void,
+): (() => void) | undefined {
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    return undefined;
+  }
+  const channel = supabase
+    .channel(`live-messages:${streamId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'live_messages',
+        filter: `stream_id=eq.${streamId}`,
+      },
+      onChange,
+    )
+    .subscribe();
+  return () => {
+    void supabase.removeChannel(channel);
+  };
+}
+
+export async function saveReminder(
+  streamId: string,
+  notificationId: string,
+): Promise<void> {
+  const { supabase, user } = await requireUser();
+  const { error } = await supabase.from('live_reminders').upsert({
+    stream_id: streamId,
+    user_id: user.id,
+    notification_id: notificationId,
+  });
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
+export async function removeReminder(streamId: string): Promise<string | null> {
+  const { supabase, user } = await requireUser();
+  const { data, error } = await supabase
+    .from('live_reminders')
+    .delete()
+    .eq('stream_id', streamId)
+    .eq('user_id', user.id)
+    .select('notification_id')
+    .maybeSingle();
+  if (error) {
+    throw new Error(error.message);
+  }
+  return data?.notification_id ?? null;
+}

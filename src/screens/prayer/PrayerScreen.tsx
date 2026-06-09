@@ -1,0 +1,220 @@
+import { useCallback, useEffect, useState } from 'react';
+import { Alert, Pressable, Switch, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { Header } from '@/components/common/Header';
+import { Card } from '@/components/ui/Card';
+import { Text } from '@/components/ui/Text';
+import { EmptyState } from '@/components/common/EmptyState';
+import { ComposerModal } from '@/components/common/ComposerModal';
+import type { PrayerRequest } from '@/types';
+import {
+  createPrayerRequest,
+  deletePrayerRequest,
+  fetchPrayerRequests,
+  togglePrayerSupport,
+  updatePrayerStatus,
+} from '@/services/community/communityService';
+import { palette } from '@/constants/colors';
+
+export function PrayerScreen() {
+  const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [composerOpen, setComposerOpen] = useState(false);
+  const [draft, setDraft] = useState('');
+  const [anonymous, setAnonymous] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      setPrayers(await fetchPrayerRequests());
+    } catch (nextError) {
+      setError(nextError instanceof Error ? nextError.message : 'Could not load prayer requests.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const createPrayer = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      await createPrayerRequest(draft, anonymous);
+      setDraft('');
+      setAnonymous(false);
+      setComposerOpen(false);
+      await load();
+    } catch (nextError) {
+      setError(nextError instanceof Error ? nextError.message : 'Could not publish the request.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const support = async (prayer: PrayerRequest) => {
+    setPrayers((current) =>
+      current.map((item) =>
+        item.id === prayer.id
+          ? {
+              ...item,
+              supportedByMe: !item.supportedByMe,
+              supportCount: item.supportCount + (item.supportedByMe ? -1 : 1),
+            }
+          : item,
+      ),
+    );
+    try {
+      await togglePrayerSupport(prayer.id, prayer.supportedByMe);
+    } catch (nextError) {
+      setError(nextError instanceof Error ? nextError.message : 'Could not update prayer support.');
+      await load();
+    }
+  };
+
+  const markAnswered = async (prayer: PrayerRequest) => {
+    try {
+      await updatePrayerStatus(
+        prayer.id,
+        prayer.status === 'answered' ? 'published' : 'answered',
+      );
+      await load();
+    } catch (nextError) {
+      setError(nextError instanceof Error ? nextError.message : 'Could not update the request.');
+    }
+  };
+
+  const removePrayer = (prayer: PrayerRequest) => {
+    Alert.alert('Delete prayer request?', 'This action cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => {
+          void deletePrayerRequest(prayer.id)
+            .then(load)
+            .catch((nextError: unknown) => {
+              setError(
+                nextError instanceof Error ? nextError.message : 'Could not delete the request.',
+              );
+            });
+        },
+      },
+    ]);
+  };
+
+  return (
+    <>
+      <ScreenContainer contentClassName="px-4">
+        <Header title="Prayer" subtitle="Share requests and pray together" />
+        {error ? (
+          <Pressable className="mb-3" onPress={() => void load()}>
+            <Text className="text-red-500 text-center">{error} Tap to retry.</Text>
+          </Pressable>
+        ) : null}
+        {loading ? <Text variant="caption">Loading prayer requests...</Text> : null}
+        {!loading && prayers.length === 0 ? (
+          <EmptyState title="No prayer requests yet" message="Share a request with the community." />
+        ) : null}
+        {prayers.map((prayer) => (
+          <Card key={prayer.id} className="mb-3">
+            <View className="flex-row items-center justify-between">
+              <Text variant="subtitle">{prayer.authorName}</Text>
+              {prayer.status === 'answered' ? (
+                <View className="rounded-md bg-green-500/15 px-2 py-1">
+                  <Text className="text-green-600 text-xs font-semibold">ANSWERED</Text>
+                </View>
+              ) : null}
+            </View>
+            <Text variant="body" className="mt-2">{prayer.content}</Text>
+            <View className="mt-3 flex-row items-center justify-between">
+              <Pressable
+                className="flex-row items-center gap-2 py-2"
+                accessibilityRole="button"
+                accessibilityLabel={prayer.supportedByMe ? 'Remove prayer support' : 'I prayed'}
+                onPress={() => void support(prayer)}
+              >
+                <Ionicons
+                  name={prayer.supportedByMe ? 'heart' : 'heart-outline'}
+                  size={20}
+                  color={prayer.supportedByMe ? palette.brand : palette.muted}
+                />
+                <Text variant="caption">
+                  {prayer.supportCount === 1 ? '1 person prayed' : `${prayer.supportCount} people prayed`}
+                </Text>
+              </Pressable>
+              {prayer.isOwner ? (
+                <View className="flex-row">
+                  <Pressable
+                    className="w-10 h-10 items-center justify-center"
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      prayer.status === 'answered' ? 'Mark request active' : 'Mark prayer answered'
+                    }
+                    onPress={() => void markAnswered(prayer)}
+                  >
+                    <Ionicons
+                      name={prayer.status === 'answered' ? 'refresh-outline' : 'checkmark-circle-outline'}
+                      size={21}
+                      color={palette.success}
+                    />
+                  </Pressable>
+                  <Pressable
+                    className="w-10 h-10 items-center justify-center"
+                    accessibilityRole="button"
+                    accessibilityLabel="Delete prayer request"
+                    onPress={() => removePrayer(prayer)}
+                  >
+                    <Ionicons name="trash-outline" size={20} color={palette.danger} />
+                  </Pressable>
+                </View>
+              ) : null}
+            </View>
+          </Card>
+        ))}
+        <View className="h-20" />
+      </ScreenContainer>
+      <Pressable
+        className="absolute bottom-8 right-4 w-14 h-14 rounded-full bg-brand items-center justify-center shadow-lg"
+        accessibilityRole="button"
+        accessibilityLabel="Create prayer request"
+        onPress={() => setComposerOpen(true)}
+      >
+        <Ionicons name="add" size={28} color={palette.backgroundDark} />
+      </Pressable>
+      <ComposerModal
+        visible={composerOpen}
+        title="Prayer request"
+        value={draft}
+        placeholder="How can the community pray with you?"
+        submitTitle="Share request"
+        maxLength={3000}
+        loading={saving}
+        error={composerOpen ? error : null}
+        onChangeText={setDraft}
+        onClose={() => setComposerOpen(false)}
+        onSubmit={() => void createPrayer()}
+      >
+        <View className="mt-4 flex-row items-center justify-between">
+          <View className="flex-1 pr-4">
+            <Text className="font-semibold">Post anonymously</Text>
+            <Text variant="caption" className="mt-1">
+              Your identity stays hidden from other members.
+            </Text>
+          </View>
+          <Switch
+            value={anonymous}
+            onValueChange={setAnonymous}
+            trackColor={{ false: palette.muted, true: palette.brand }}
+          />
+        </View>
+      </ComposerModal>
+    </>
+  );
+}

@@ -1,0 +1,208 @@
+import { useCallback, useEffect, useState } from 'react';
+import { Alert, Pressable, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { Header } from '@/components/common/Header';
+import { Card } from '@/components/ui/Card';
+import { Text } from '@/components/ui/Text';
+import { EmptyState } from '@/components/common/EmptyState';
+import { ComposerModal } from '@/components/common/ComposerModal';
+import type { CommunityPost } from '@/types';
+import type { CommunityStackParamList } from '@/navigation/types';
+import {
+  createCommunityPost,
+  deleteCommunityPost,
+  fetchCommunityPosts,
+  togglePostReaction,
+  updateCommunityPost,
+} from '@/services/community/communityService';
+import { palette } from '@/constants/colors';
+
+type Nav = NativeStackNavigationProp<CommunityStackParamList, 'CommunityMain'>;
+
+export function CommunityScreen() {
+  const navigation = useNavigation<Nav>();
+  const [posts, setPosts] = useState<CommunityPost[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [composerOpen, setComposerOpen] = useState(false);
+  const [editingPost, setEditingPost] = useState<CommunityPost | null>(null);
+  const [draft, setDraft] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      setPosts(await fetchCommunityPosts());
+    } catch (nextError) {
+      setError(nextError instanceof Error ? nextError.message : 'Could not load the community.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const openCreate = () => {
+    setEditingPost(null);
+    setDraft('');
+    setComposerOpen(true);
+  };
+
+  const openEdit = (post: CommunityPost) => {
+    setEditingPost(post);
+    setDraft(post.body);
+    setComposerOpen(true);
+  };
+
+  const savePost = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      if (editingPost) {
+        await updateCommunityPost(editingPost.id, draft);
+      } else {
+        await createCommunityPost(draft);
+      }
+      setComposerOpen(false);
+      await load();
+    } catch (nextError) {
+      setError(nextError instanceof Error ? nextError.message : 'Could not save the post.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const removePost = (post: CommunityPost) => {
+    Alert.alert('Delete post?', 'This also removes its comments and reactions.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => {
+          void deleteCommunityPost(post.id)
+            .then(load)
+            .catch((nextError: unknown) => {
+              setError(nextError instanceof Error ? nextError.message : 'Could not delete the post.');
+            });
+        },
+      },
+    ]);
+  };
+
+  const react = async (post: CommunityPost) => {
+    setPosts((current) =>
+      current.map((item) =>
+        item.id === post.id
+          ? {
+              ...item,
+              reactedByMe: !item.reactedByMe,
+              reactionCount: item.reactionCount + (item.reactedByMe ? -1 : 1),
+            }
+          : item,
+      ),
+    );
+    try {
+      await togglePostReaction(post.id, post.reactedByMe);
+    } catch (nextError) {
+      setError(nextError instanceof Error ? nextError.message : 'Could not update reaction.');
+      await load();
+    }
+  };
+
+  return (
+    <>
+      <ScreenContainer contentClassName="px-4">
+        <Header title="Community" subtitle="Discuss studies and encourage one another" />
+        {error ? (
+          <Pressable className="mb-3" onPress={() => void load()}>
+            <Text className="text-red-500 text-center">{error} Tap to retry.</Text>
+          </Pressable>
+        ) : null}
+        {loading ? <Text variant="caption">Loading discussions...</Text> : null}
+        {!loading && posts.length === 0 ? (
+          <EmptyState title="Start the conversation" message="Share a reflection or study question." />
+        ) : null}
+        {posts.map((post) => (
+          <Card key={post.id} className="mb-3">
+            <View className="flex-row items-center justify-between">
+              <Text variant="subtitle">{post.authorName}</Text>
+              {post.isOwner ? (
+                <View className="flex-row">
+                  <Pressable
+                    className="w-10 h-10 items-center justify-center"
+                    accessibilityRole="button"
+                    accessibilityLabel="Edit post"
+                    onPress={() => openEdit(post)}
+                  >
+                    <Ionicons name="create-outline" size={20} color={palette.muted} />
+                  </Pressable>
+                  <Pressable
+                    className="w-10 h-10 items-center justify-center"
+                    accessibilityRole="button"
+                    accessibilityLabel="Delete post"
+                    onPress={() => removePost(post)}
+                  >
+                    <Ionicons name="trash-outline" size={20} color={palette.danger} />
+                  </Pressable>
+                </View>
+              ) : null}
+            </View>
+            <Text variant="body" className="mt-2">{post.body}</Text>
+            <View className="mt-3 flex-row gap-5">
+              <Pressable
+                className="flex-row items-center gap-1"
+                accessibilityRole="button"
+                accessibilityLabel={post.reactedByMe ? 'Remove like' : 'Like post'}
+                onPress={() => void react(post)}
+              >
+                <Ionicons
+                  name={post.reactedByMe ? 'heart' : 'heart-outline'}
+                  size={20}
+                  color={post.reactedByMe ? palette.danger : palette.muted}
+                />
+                <Text variant="caption">{post.reactionCount}</Text>
+              </Pressable>
+              <Pressable
+                className="flex-row items-center gap-1"
+                accessibilityRole="button"
+                accessibilityLabel="Open comments"
+                onPress={() => navigation.navigate('CommunityPost', { post })}
+              >
+                <Ionicons name="chatbubble-outline" size={19} color={palette.muted} />
+                <Text variant="caption">{post.commentCount}</Text>
+              </Pressable>
+            </View>
+          </Card>
+        ))}
+        <View className="h-20" />
+      </ScreenContainer>
+      <Pressable
+        className="absolute bottom-8 right-4 w-14 h-14 rounded-full bg-brand items-center justify-center shadow-lg"
+        accessibilityRole="button"
+        accessibilityLabel="Create community post"
+        onPress={openCreate}
+      >
+        <Ionicons name="add" size={28} color={palette.backgroundDark} />
+      </Pressable>
+      <ComposerModal
+        visible={composerOpen}
+        title={editingPost ? 'Edit post' : 'New post'}
+        value={draft}
+        placeholder="Share a reflection or ask a study question..."
+        submitTitle={editingPost ? 'Save changes' : 'Publish post'}
+        maxLength={5000}
+        loading={saving}
+        error={composerOpen ? error : null}
+        onChangeText={setDraft}
+        onClose={() => setComposerOpen(false)}
+        onSubmit={() => void savePost()}
+      />
+    </>
+  );
+}
