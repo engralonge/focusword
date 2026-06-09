@@ -7,11 +7,12 @@ import type {
   VerseSearchResult,
 } from '@/types/bible';
 import { getAllSearchableVerses, getChapterContent } from '@/services/bible/bibleContent';
+import { getWebChapter, searchWebVerses } from '@/services/bible/webBible';
 import { BIBLE_BOOKS, getBibleBook } from '@/constants/bible';
 import { getSupabaseClient } from '@/services/supabase/client';
 
 export { BIBLE_BOOKS };
-export const TRANSLATIONS: BibleTranslation[] = ['KJV', 'NIV', 'ESV'];
+export const TRANSLATIONS: BibleTranslation[] = ['WEB', 'KJV', 'NIV', 'ESV'];
 
 async function requireUser() {
   const supabase = getSupabaseClient();
@@ -33,6 +34,14 @@ export async function fetchChapter(
   const metadata = getBibleBook(book);
   if (!metadata || chapter < 1 || chapter > metadata.chapters) {
     throw new Error(`Invalid Bible reference: ${book} ${chapter}.`);
+  }
+
+  if (translation === 'WEB') {
+    const offline = getWebChapter(metadata.id, metadata.name, chapter);
+    if (offline) {
+      return offline;
+    }
+    throw new Error(`Offline WEB content is unavailable for ${book} ${chapter}.`);
   }
 
   const supabase = getSupabaseClient();
@@ -65,7 +74,7 @@ export async function fetchChapter(
     return offline;
   }
   throw new Error(
-    'Connect Citizens Bible Community to load this chapter. John 3 and Psalms 23 are available offline.',
+    'This translation requires an internet connection and provider access. WEB is available fully offline.',
   );
 }
 
@@ -107,6 +116,10 @@ export async function searchVerses(
   const q = query.trim();
   if (q.length < 2) {
     return [];
+  }
+
+  if (translation === 'WEB') {
+    return searchWebVerses(q);
   }
 
   const supabase = getSupabaseClient();

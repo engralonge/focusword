@@ -1,4 +1,4 @@
-export type BibleTranslation = 'KJV' | 'NIV' | 'ESV';
+export type BibleTranslation = 'WEB' | 'KJV' | 'NIV' | 'ESV';
 
 export type BibleVerse = {
   number: number;

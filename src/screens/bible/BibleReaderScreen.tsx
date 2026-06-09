@@ -45,7 +45,7 @@ export function BibleReaderScreen() {
   const listRef = useRef<FlatList>(null);
 
   const [translation, setTranslation] = useState<BibleTranslation>(
-    params.translation ?? 'KJV',
+    params.translation ?? 'WEB',
   );
   const [chapter, setChapter] = useState<BibleChapter | null>(null);
   const [annotations, setAnnotations] = useState<BibleAnnotation[]>([]);
@@ -309,6 +309,11 @@ export function BibleReaderScreen() {
           ) : null}
           <View className="mt-3">
             <TranslationToggle value={translation} onChange={setTranslation} />
+            {translation === 'WEB' ? (
+              <Text variant="caption" className="text-center mt-2 text-brand">
+                Complete World English Bible included offline
+              </Text>
+            ) : null}
           </View>
         </View>
 

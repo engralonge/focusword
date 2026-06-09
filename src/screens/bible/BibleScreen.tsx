@@ -62,7 +62,7 @@ export function BibleScreen() {
       }
       setSearching(true);
       setSearchError(null);
-      searchVerses(query, 'KJV')
+      searchVerses(query, 'WEB')
         .then(setResults)
         .catch((error: unknown) => {
           setResults([]);
@@ -77,7 +77,7 @@ export function BibleScreen() {
     book: string,
     chapter: number,
     verse?: number,
-    translation: ReadingProgress['translation'] = 'KJV',
+    translation: ReadingProgress['translation'] = 'WEB',
   ) => {
     navigation.navigate('BibleReader', { book, chapter, verse, translation });
   };

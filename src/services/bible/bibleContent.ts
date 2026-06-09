@@ -1,8 +1,9 @@
 import type { BibleChapter, BibleTranslation, BibleVerse } from '@/types/bible';
 
 type ChapterKey = `${string}:${number}`;
+type ProviderTranslation = Exclude<BibleTranslation, 'WEB'>;
 
-const JOHN_3: Record<BibleTranslation, BibleVerse[]> = {
+const JOHN_3: Record<ProviderTranslation, BibleVerse[]> = {
   KJV: [
     { number: 1, text: 'There was a man of the Pharisees, named Nicodemus, a ruler of the Jews:' },
     { number: 2, text: 'The same came to Jesus by night, and said unto him, Rabbi, we know that thou art a teacher come from God: for no man can do these miracles that thou doest, except God be with him.' },
@@ -32,7 +33,7 @@ const JOHN_3: Record<BibleTranslation, BibleVerse[]> = {
   ],
 };
 
-const PSALM_23: Record<BibleTranslation, BibleVerse[]> = {
+const PSALM_23: Record<ProviderTranslation, BibleVerse[]> = {
   KJV: [
     { number: 1, text: 'The LORD is my shepherd; I shall not want.' },
     { number: 2, text: 'He maketh me to lie down in green pastures: he leadeth me beside the still waters.' },
@@ -53,7 +54,7 @@ const PSALM_23: Record<BibleTranslation, BibleVerse[]> = {
   ],
 };
 
-const CHAPTERS: Partial<Record<ChapterKey, Record<BibleTranslation, BibleVerse[]>>> = {
+const CHAPTERS: Partial<Record<ChapterKey, Record<ProviderTranslation, BibleVerse[]>>> = {
   'John:3': JOHN_3,
   'Psalms:23': PSALM_23,
 };
@@ -63,6 +64,9 @@ export function getChapterContent(
   chapter: number,
   translation: BibleTranslation,
 ): BibleChapter | null {
+  if (translation === 'WEB') {
+    return null;
+  }
   const key = `${book}:${chapter}` as ChapterKey;
   const data = CHAPTERS[key];
   if (!data) {
@@ -75,13 +79,13 @@ export function getAllSearchableVerses(): Array<{
   book: string;
   chapter: number;
   verse: number;
-  translations: Record<BibleTranslation, string>;
+  translations: Partial<Record<BibleTranslation, string>>;
 }> {
   const results: Array<{
     book: string;
     chapter: number;
     verse: number;
-    translations: Record<BibleTranslation, string>;
+    translations: Partial<Record<BibleTranslation, string>>;
   }> = [];
 
   for (const [key, translations] of Object.entries(CHAPTERS)) {
@@ -95,8 +99,8 @@ export function getAllSearchableVerses(): Array<{
       verses.forEach((v) => verseNumbers.add(v.number));
     }
     for (const verse of verseNumbers) {
-      const texts = {} as Record<BibleTranslation, string>;
-      for (const [t, verses] of Object.entries(translations) as [BibleTranslation, BibleVerse[]][]) {
+      const texts: Partial<Record<BibleTranslation, string>> = {};
+      for (const [t, verses] of Object.entries(translations) as [ProviderTranslation, BibleVerse[]][]) {
         const found = verses.find((v) => v.number === verse);
         if (found) {
           texts[t] = found.text;

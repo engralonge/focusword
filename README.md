@@ -5,7 +5,8 @@ Bible study live streaming app built with **React Native**, **Expo**, **NativeWi
 ## Features
 
 - Bottom tab navigation: Live, Bible, Prayer, Community, Profile
-- Provider-backed Bible reader with full canon navigation, search, notes, highlights, bookmarks, and AI summaries
+- Complete World English Bible bundled for offline reading and search
+- Provider-backed NIV/ESV/KJV access when licensed, with notes, highlights, bookmarks, and AI summaries
 - NativeWind (Tailwind) styling with light / dark / system theme
 - Supabase email auth with verification and password recovery
 - Owned community posts, comments, reactions, prayer requests, and prayer support
@@ -73,8 +74,9 @@ supabase secrets set API_BIBLE_KJV_ID=... API_BIBLE_NIV_ID=... API_BIBLE_ESV_ID=
 supabase functions deploy bible-content
 ```
 
-The app displays provider copyright notices and keeps John 3 and Psalms 23 as a limited
-offline fallback. Notes, highlights, bookmarks, and reading progress sync through Supabase.
+The complete public-domain World English Bible is bundled in the app for offline reading
+and search. Provider-backed translations display their required copyright notices. Notes,
+highlights, bookmarks, and reading progress sync through Supabase.
 
 ## Scripts
 
@@ -92,9 +94,9 @@ offline fallback. Notes, highlights, bookmarks, and reading progress sync throug
 
 ## Bible reader
 
-Offline fallback chapters: **John 3**, **Psalm 23**. With API.Bible configured, users can
-navigate all 66 books, search by keyword or reference, sync study annotations, and request
-secure AI summaries through Supabase.
+The complete **World English Bible** is available offline. With API.Bible configured, users
+can also access licensed translations. All translations support navigation across 66 books,
+keyword/reference search, synced study annotations, and secure AI summaries through Supabase.
 
 ## Live studies
 
