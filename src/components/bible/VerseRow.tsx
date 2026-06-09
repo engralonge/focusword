@@ -22,7 +22,7 @@ function VerseText({ text, searchQuery }: { text: string; searchQuery: string })
   const q = searchQuery.trim();
   if (q.length < 2) {
     return (
-      <Text className="text-lg leading-8 text-foreground-light dark:text-foreground flex-1">
+      <Text className="text-[18px] leading-8 text-scripture flex-1 font-light">
         {text}
       </Text>
     );
@@ -30,10 +30,10 @@ function VerseText({ text, searchQuery }: { text: string; searchQuery: string })
 
   const parts = text.split(new RegExp(`(${escapeRegex(q)})`, 'gi'));
   return (
-    <Text className="text-lg leading-8 text-foreground-light dark:text-foreground flex-1">
+    <Text className="text-[18px] leading-8 text-scripture flex-1 font-light">
       {parts.map((part, i) =>
         part.toLowerCase() === q.toLowerCase() ? (
-          <Text key={i} className="bg-brand/40 text-foreground-light dark:text-foreground font-medium">
+          <Text key={i} className="bg-brand/35 text-scripture font-medium">
             {part}
           </Text>
         ) : (
@@ -57,11 +57,11 @@ export function VerseRow({
     <Pressable onPress={onPress}>
       <View
         className={cn(
-          'flex-row gap-3 px-3 py-3 rounded-xl mb-1',
-          highlighted && 'bg-brand/15 border-l-4 border-brand',
+          'flex-row gap-3 px-3 py-3.5 rounded-xl mb-1',
+          highlighted && 'bg-brand/[0.12] border-l-2 border-brand',
         )}
       >
-        <Text className="text-brand font-bold text-base w-7 text-right pt-0.5">{number}</Text>
+        <Text className="text-brand-muted font-semibold text-sm w-7 text-right pt-1">{number}</Text>
         <VerseText text={text} searchQuery={searchQuery} />
         {bookmarked || hasNote ? (
           <View className="gap-1 pt-1">

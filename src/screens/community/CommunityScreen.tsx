@@ -117,8 +117,21 @@ export function CommunityScreen() {
 
   return (
     <>
-      <ScreenContainer contentClassName="px-4">
-        <Header title="Community" subtitle="Discuss studies and encourage one another" />
+      <ScreenContainer contentClassName="px-5">
+        <Header title="Community" subtitle="Encourage, testify, and walk together in faith" />
+        <Card className="mb-6 rounded-3xl border-brand/20 bg-brand/[0.05] p-5">
+          <View className="flex-row items-center gap-3">
+            <View className="w-11 h-11 rounded-xl bg-brand/12 items-center justify-center">
+              <Ionicons name="people-outline" size={22} color={palette.brandLight} />
+            </View>
+            <View className="flex-1">
+              <Text variant="subtitle">Family of faith</Text>
+              <Text variant="caption" className="mt-1 leading-5">
+                Recent encouragement from the community.
+              </Text>
+            </View>
+          </View>
+        </Card>
         {error ? (
           <Pressable className="mb-3" onPress={() => void load()}>
             <Text className="text-red-500 text-center">{error} Tap to retry.</Text>
@@ -129,7 +142,7 @@ export function CommunityScreen() {
           <EmptyState title="Start the conversation" message="Share a reflection or study question." />
         ) : null}
         {posts.map((post) => (
-          <Card key={post.id} className="mb-3">
+          <Card key={post.id} className="mb-3 border-brand/15 bg-surface-elevated/80 p-5">
             <View className="flex-row items-center justify-between">
               <Text variant="subtitle">{post.authorName}</Text>
               {post.isOwner ? (
@@ -153,8 +166,8 @@ export function CommunityScreen() {
                 </View>
               ) : null}
             </View>
-            <Text variant="body" className="mt-2">{post.body}</Text>
-            <View className="mt-3 flex-row gap-5">
+            <Text variant="body" className="mt-3 leading-7">{post.body}</Text>
+            <View className="mt-4 pt-3 border-t border-border-subtle flex-row gap-5">
               <Pressable
                 className="flex-row items-center gap-1"
                 accessibilityRole="button"
@@ -183,7 +196,7 @@ export function CommunityScreen() {
         <View className="h-20" />
       </ScreenContainer>
       <Pressable
-        className="absolute bottom-8 right-4 w-14 h-14 rounded-full bg-brand items-center justify-center shadow-lg"
+        className="absolute bottom-8 right-5 w-14 h-14 rounded-2xl bg-brand items-center justify-center shadow-lg border border-brand-light/30"
         accessibilityRole="button"
         accessibilityLabel="Create community post"
         onPress={openCreate}

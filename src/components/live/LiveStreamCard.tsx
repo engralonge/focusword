@@ -25,7 +25,7 @@ export function LiveStreamCard({ stream, onPress }: Props) {
       accessibilityRole="button"
       accessibilityLabel={`Open ${stream.title}, ${stream.status}`}
     >
-      <Card className="mb-3">
+      <Card className="mb-3 border-live/20 bg-live/[0.04] p-5">
         <View className="flex-row items-start justify-between">
           <LiveBadge status={stream.status} />
           {stream.status === 'live' ? (
@@ -35,7 +35,7 @@ export function LiveStreamCard({ stream, onPress }: Props) {
             </View>
           ) : null}
         </View>
-        <Text variant="subtitle" className="mt-2">{stream.title}</Text>
+        <Text variant="subtitle" className="mt-3">{stream.title}</Text>
         <Text variant="caption" className="mt-1">Hosted by {stream.hostName}</Text>
         {scheduleLabel ? (
           <View className="flex-row items-center gap-2 mt-2">
@@ -44,10 +44,16 @@ export function LiveStreamCard({ stream, onPress }: Props) {
           </View>
         ) : null}
         {stream.description ? (
-          <Text variant="body" numberOfLines={2} className="mt-2">
+          <Text variant="body" numberOfLines={2} className="mt-3 text-muted">
             {stream.description}
           </Text>
         ) : null}
+        <View className="mt-4 pt-3 border-t border-border-subtle flex-row items-center justify-between">
+          <Text className="text-brand-muted text-sm font-medium">
+            {stream.status === 'live' ? 'Join gathering' : 'View study'}
+          </Text>
+          <Ionicons name="arrow-forward" size={17} color={palette.brandMuted} />
+        </View>
       </Card>
     </Pressable>
   );

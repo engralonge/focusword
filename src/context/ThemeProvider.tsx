@@ -6,7 +6,6 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { useColorScheme as useSystemColorScheme } from 'react-native';
 import { colorScheme } from 'nativewind';
 import type { ThemeMode } from '@/types';
 import { getThemePreference, setThemePreference } from '@/utils/storage';
@@ -21,8 +20,7 @@ type ThemeContextValue = {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const system = useSystemColorScheme();
-  const [mode, setModeState] = useState<ThemeMode>('system');
+  const [mode, setModeState] = useState<ThemeMode>('dark');
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -34,8 +32,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const resolved: 'light' | 'dark' =
-    mode === 'system' ? (system === 'dark' ? 'dark' : 'light') : mode;
+  const resolved: 'light' | 'dark' = 'dark';
 
   useEffect(() => {
     if (loaded) {

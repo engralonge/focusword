@@ -111,8 +111,17 @@ export function PrayerScreen() {
 
   return (
     <>
-      <ScreenContainer contentClassName="px-4">
-        <Header title="Prayer" subtitle="Share requests and pray together" />
+      <ScreenContainer contentClassName="px-5">
+        <Header title="Prayer" subtitle="Your community is ready to stand with you in faith" />
+        <Card className="mb-6 rounded-3xl border-brand/20 bg-brand/[0.05] p-5">
+          <Ionicons name="heart-outline" size={24} color={palette.brandLight} />
+          <Text className="mt-4 text-scripture text-lg leading-7 font-light">
+            Every breath can be a quiet prayer.
+          </Text>
+          <Text variant="caption" className="mt-2">
+            Share a burden, celebrate an answer, or pray with someone today.
+          </Text>
+        </Card>
         {error ? (
           <Pressable className="mb-3" onPress={() => void load()}>
             <Text className="text-red-500 text-center">{error} Tap to retry.</Text>
@@ -123,7 +132,7 @@ export function PrayerScreen() {
           <EmptyState title="No prayer requests yet" message="Share a request with the community." />
         ) : null}
         {prayers.map((prayer) => (
-          <Card key={prayer.id} className="mb-3">
+          <Card key={prayer.id} className="mb-3 border-brand/15 bg-surface-elevated/80 p-5">
             <View className="flex-row items-center justify-between">
               <Text variant="subtitle">{prayer.authorName}</Text>
               {prayer.status === 'answered' ? (
@@ -132,8 +141,8 @@ export function PrayerScreen() {
                 </View>
               ) : null}
             </View>
-            <Text variant="body" className="mt-2">{prayer.content}</Text>
-            <View className="mt-3 flex-row items-center justify-between">
+            <Text variant="body" className="mt-3 leading-7">{prayer.content}</Text>
+            <View className="mt-4 pt-3 border-t border-border-subtle flex-row items-center justify-between">
               <Pressable
                 className="flex-row items-center gap-2 py-2"
                 accessibilityRole="button"
@@ -181,12 +190,12 @@ export function PrayerScreen() {
         <View className="h-20" />
       </ScreenContainer>
       <Pressable
-        className="absolute bottom-8 right-4 w-14 h-14 rounded-full bg-brand items-center justify-center shadow-lg"
+        className="absolute bottom-8 right-5 w-14 h-14 rounded-2xl bg-brand items-center justify-center shadow-lg border border-brand-light/30"
         accessibilityRole="button"
         accessibilityLabel="Create prayer request"
         onPress={() => setComposerOpen(true)}
       >
-        <Ionicons name="add" size={28} color={palette.backgroundDark} />
+        <Ionicons name="add" size={26} color={palette.backgroundDark} />
       </Pressable>
       <ComposerModal
         visible={composerOpen}

@@ -18,7 +18,7 @@ export function ScreenContainer({
   const body = scroll ? (
     <ScrollView
       className={cn('flex-1', contentClassName)}
-      contentContainerClassName="pb-8"
+      contentContainerClassName="pb-10"
       showsVerticalScrollIndicator={false}
     >
       {children}
@@ -31,7 +31,7 @@ export function ScreenContainer({
 
   return (
     <SafeAreaView
-      className={cn('flex-1 bg-background-light dark:bg-background', className)}
+      className={cn('flex-1 bg-background', className)}
       edges={['top']}
     >
       {body}

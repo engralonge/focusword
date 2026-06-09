@@ -2,6 +2,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import type { MainTabParamList } from '@/navigation/types';
 import { HomeStack } from '@/navigation/HomeStack';
+import { LiveStack } from '@/navigation/LiveStack';
 import { BibleStack } from '@/navigation/BibleStack';
 import { PrayerStack } from '@/navigation/PrayerStack';
 import { CommunityStack } from '@/navigation/CommunityStack';
@@ -13,7 +14,8 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 type TabIconName = keyof typeof Ionicons.glyphMap;
 
 const tabIcons: Record<keyof MainTabParamList, { focused: TabIconName; unfocused: TabIconName }> = {
-  Home: { focused: 'radio', unfocused: 'radio-outline' },
+  Home: { focused: 'home', unfocused: 'home-outline' },
+  Live: { focused: 'radio', unfocused: 'radio-outline' },
   Bible: { focused: 'book', unfocused: 'book-outline' },
   Prayer: { focused: 'heart', unfocused: 'heart-outline' },
   Community: { focused: 'people', unfocused: 'people-outline' },
@@ -35,17 +37,26 @@ export function TabNavigator() {
         },
         tabBarActiveTintColor: tabColors.active,
         tabBarInactiveTintColor: tabColors.inactive,
+        tabBarLabelStyle: {
+          fontSize: 10,
+          fontWeight: '600',
+          marginTop: 2,
+        },
+        tabBarItemStyle: {
+          paddingTop: 6,
+          paddingBottom: 4,
+        },
         tabBarStyle: {
           backgroundColor: tabColors.background,
           borderTopColor: tabColors.border,
+          borderTopWidth: 1,
+          height: 68,
+          paddingHorizontal: 2,
         },
       })}
     >
-      <Tab.Screen
-        name="Home"
-        component={HomeStack}
-        options={{ title: 'Live', tabBarLabel: 'Live' }}
-      />
+      <Tab.Screen name="Home" component={HomeStack} />
+      <Tab.Screen name="Live" component={LiveStack} />
       <Tab.Screen name="Bible" component={BibleStack} />
       <Tab.Screen name="Prayer" component={PrayerStack} />
       <Tab.Screen name="Community" component={CommunityStack} />

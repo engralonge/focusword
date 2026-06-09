@@ -1,6 +1,10 @@
 import type { NavigatorScreenParams } from '@react-navigation/native';
 
 export type HomeStackParamList = {
+  HomeMain: undefined;
+};
+
+export type LiveStackParamList = {
   LiveHome: undefined;
   CreateStream: undefined;
   LiveStream: { streamId: string };
@@ -46,6 +50,7 @@ export type AuthStackParamList = {
 
 export type MainTabParamList = {
   Home: NavigatorScreenParams<HomeStackParamList>;
+  Live: NavigatorScreenParams<LiveStackParamList>;
   Bible: NavigatorScreenParams<BibleStackParamList>;
   Prayer: NavigatorScreenParams<PrayerStackParamList>;
   Community: NavigatorScreenParams<CommunityStackParamList>;

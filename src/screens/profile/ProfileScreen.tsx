@@ -1,4 +1,5 @@
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
@@ -9,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/context/AuthProvider';
 import type { ProfileStackParamList } from '@/navigation/types';
 import { config } from '@/constants/config';
+import { palette } from '@/constants/colors';
 
 type Nav = NativeStackNavigationProp<ProfileStackParamList, 'ProfileMain'>;
 
@@ -17,11 +19,11 @@ export function ProfileScreen() {
   const { session, signOut } = useAuth();
 
   return (
-    <ScreenContainer contentClassName="px-4">
-      <Header title="Profile" subtitle={config.appName} />
-      <Card>
-        <View className="w-16 h-16 rounded-full bg-brand/20 items-center justify-center mb-3">
-          <Text variant="title" className="text-brand">
+    <ScreenContainer contentClassName="px-5">
+      <Header title="Profile" subtitle="Your journey in the Word" />
+      <Card className="rounded-3xl border-brand/25 bg-brand/[0.05] p-6 items-center">
+        <View className="w-[88px] h-[88px] rounded-full bg-surface-elevated border-2 border-brand/35 items-center justify-center mb-5">
+          <Text variant="title" className="text-brand-light">
             {(session?.user.displayName ?? 'G')[0]?.toUpperCase()}
           </Text>
         </View>
@@ -31,22 +33,35 @@ export function ProfileScreen() {
         <Text variant="caption" className="mt-1">
           {session?.user.email ?? 'Not signed in'}
         </Text>
-        {session?.user.bio ? (
-          <Text variant="body" className="mt-3">{session.user.bio}</Text>
-        ) : null}
+        <Text variant="body" className="mt-4 text-center text-muted leading-6">
+          {session?.user.bio ?? 'Small faithful steps become a life of depth.'}
+        </Text>
       </Card>
-      <Button
-        title="Edit profile"
-        className="mt-4"
-        onPress={() => navigation.navigate('EditProfile')}
-      />
-      <Button
-        title="Settings"
-        variant="secondary"
-        className="mt-3"
-        onPress={() => navigation.navigate('Settings')}
-      />
-      <Button title="Sign out" variant="ghost" className="mt-3" onPress={() => void signOut()} />
+      <Text variant="label" className="mt-7 mb-3">Account</Text>
+      <View className="rounded-2xl border border-border overflow-hidden bg-surface-elevated/80">
+        <Pressable
+          className="flex-row items-center gap-4 px-4 py-4 border-b border-border-subtle"
+          onPress={() => navigation.navigate('EditProfile')}
+        >
+          <View className="w-10 h-10 rounded-xl bg-brand/10 items-center justify-center">
+            <Ionicons name="person-outline" size={20} color={palette.brand} />
+          </View>
+          <Text className="flex-1 font-medium">Edit profile</Text>
+          <Ionicons name="chevron-forward" size={18} color={palette.muted} />
+        </Pressable>
+        <Pressable
+          className="flex-row items-center gap-4 px-4 py-4"
+          onPress={() => navigation.navigate('Settings')}
+        >
+          <View className="w-10 h-10 rounded-xl bg-brand/10 items-center justify-center">
+            <Ionicons name="settings-outline" size={20} color={palette.brand} />
+          </View>
+          <Text className="flex-1 font-medium">Settings</Text>
+          <Ionicons name="chevron-forward" size={18} color={palette.muted} />
+        </Pressable>
+      </View>
+      <Text variant="caption" className="mt-5 text-center">{config.appName}</Text>
+      <Button title="Sign out" variant="ghost" className="mt-2" onPress={() => void signOut()} />
     </ScreenContainer>
   );
 }

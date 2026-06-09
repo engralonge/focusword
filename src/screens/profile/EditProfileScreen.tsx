@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/context/AuthProvider';
 import type { ProfileStackParamList } from '@/navigation/types';
 import { validateProfile } from '@/utils/auth';
+import { palette } from '@/constants/colors';
 
 type Nav = NativeStackNavigationProp<ProfileStackParamList, 'EditProfile'>;
 
@@ -37,12 +38,12 @@ export function EditProfileScreen() {
   };
 
   return (
-    <ScreenContainer scroll={false} contentClassName="px-4">
+    <ScreenContainer scroll={false} contentClassName="px-5">
       <View className="mt-4 gap-4">
         <View>
           <Text variant="label" className="mb-2">Display name</Text>
           <TextInput
-            className="bg-surface-light dark:bg-surface rounded-xl px-4 py-3 text-foreground-light dark:text-foreground border border-black/10 dark:border-white/10"
+            className="bg-surface-elevated rounded-2xl px-4 py-4 text-foreground border border-border"
             value={displayName}
             onChangeText={setDisplayName}
             maxLength={80}
@@ -53,10 +54,11 @@ export function EditProfileScreen() {
         <View>
           <Text variant="label" className="mb-2">Bio</Text>
           <TextInput
-            className="min-h-28 bg-surface-light dark:bg-surface rounded-xl px-4 py-3 text-foreground-light dark:text-foreground border border-black/10 dark:border-white/10"
+            className="min-h-28 bg-surface-elevated rounded-2xl px-4 py-4 text-foreground border border-border"
             value={bio}
             onChangeText={setBio}
             placeholder="A little about you"
+            placeholderTextColor={palette.muted}
             maxLength={280}
             multiline
             textAlignVertical="top"

@@ -282,10 +282,10 @@ export function BibleReaderScreen() {
               />
             </Pressable>
           </View>
-          <View className="mt-2 flex-row items-center bg-surface-light dark:bg-surface rounded-xl px-3 border border-black/5 dark:border-white/10">
-            <Ionicons name="search" size={18} color={palette.muted} />
+          <View className="mt-2 flex-row items-center bg-surface-elevated rounded-2xl px-3 border border-border">
+            <Ionicons name="search-outline" size={18} color={palette.brandMuted} />
             <TextInput
-              className="flex-1 py-3 px-2 text-base text-foreground-light dark:text-foreground"
+              className="flex-1 py-3 px-2 text-base text-foreground"
               placeholder="Search Scripture"
               placeholderTextColor={palette.muted}
               value={searchQuery}
@@ -294,11 +294,11 @@ export function BibleReaderScreen() {
             {searching ? <ActivityIndicator size="small" color={palette.brand} /> : null}
           </View>
           {searchResults.length > 0 ? (
-            <View className="mt-2 rounded-xl bg-surface-light dark:bg-surface border border-black/5 dark:border-white/10 max-h-48">
+            <View className="mt-2 rounded-2xl bg-surface-elevated border border-border max-h-48">
               {searchResults.slice(0, 8).map((result) => (
                 <Pressable
                   key={`${result.reference}-${result.translation}`}
-                  className="px-3 py-2 border-b border-black/5 dark:border-white/5"
+                  className="px-3 py-2 border-b border-border-subtle"
                   onPress={() => goToResult(result)}
                 >
                   <Text className="text-brand font-semibold text-sm">{result.reference}</Text>
@@ -351,7 +351,7 @@ export function BibleReaderScreen() {
             ListHeaderComponent={
               <View className="mb-3 px-2">
                 <Text variant="caption" className="text-center">
-                  Tap a verse to select and highlight it
+                  Tap a verse to highlight it
                 </Text>
                 {chapter?.source === 'offline' ? (
                   <Text variant="caption" className="text-center mt-1 text-brand">
@@ -370,12 +370,12 @@ export function BibleReaderScreen() {
           />
         )}
 
-        <View className="absolute bottom-0 left-0 right-0 px-4 pb-5 pt-3 bg-background-light/95 dark:bg-background/95 border-t border-black/5 dark:border-white/10">
+        <View className="absolute bottom-0 left-0 right-0 px-4 pb-5 pt-3 bg-background/95 border-t border-border-subtle">
           {error && chapter ? <Text className="text-red-500 text-sm mb-2">{error}</Text> : null}
           {summaryError ? <Text className="text-red-500 text-sm mb-2">{summaryError}</Text> : null}
           <View className="flex-row gap-2 mb-2">
             <Pressable
-              className="flex-1 h-11 rounded-lg bg-surface-light dark:bg-surface items-center justify-center"
+              className="flex-1 h-11 rounded-xl bg-surface-elevated border border-border items-center justify-center"
               accessibilityRole="button"
               accessibilityLabel="Toggle bookmark"
               disabled={!activeVerse}
@@ -388,7 +388,7 @@ export function BibleReaderScreen() {
               />
             </Pressable>
             <Pressable
-              className="flex-1 h-11 rounded-lg bg-surface-light dark:bg-surface items-center justify-center"
+              className="flex-1 h-11 rounded-xl bg-surface-elevated border border-border items-center justify-center"
               accessibilityRole="button"
               accessibilityLabel="Edit verse note"
               disabled={!activeVerse}
@@ -426,7 +426,7 @@ export function BibleReaderScreen() {
       />
 
       <Modal visible={Boolean(summary)} animationType="slide" presentationStyle="pageSheet">
-        <View className="flex-1 bg-background-light dark:bg-background px-5 pt-5">
+        <View className="flex-1 bg-background px-5 pt-5">
           <View className="flex-row items-center justify-between">
             <Text variant="title">Study summary</Text>
             <Pressable

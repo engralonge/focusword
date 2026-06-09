@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/context/AuthProvider';
 import type { AuthStackParamList } from '@/navigation/types';
 import { normalizeEmail, validateEmail, validatePassword } from '@/utils/auth';
+import { palette } from '@/constants/colors';
 
 type Nav = NativeStackNavigationProp<AuthStackParamList, 'SignIn'>;
 
@@ -35,12 +36,17 @@ export function SignInScreen() {
   };
 
   return (
-    <ScreenContainer scroll={false} contentClassName="px-4 justify-center flex-1">
-      <Text variant="title">Sign in</Text>
+    <ScreenContainer scroll={false} contentClassName="px-6 justify-center flex-1">
+      <Text variant="label">Return to your community</Text>
+      <Text variant="title" className="mt-2">Welcome back</Text>
+      <Text variant="caption" className="mt-2 leading-5">
+        Sign in to continue your journey in the Word.
+      </Text>
       <View className="mt-6 gap-3">
         <TextInput
-          className="bg-surface-light dark:bg-surface rounded-xl px-4 py-3 text-foreground-light dark:text-foreground border border-black/10 dark:border-white/10"
+          className="bg-surface-elevated rounded-2xl px-4 py-4 text-foreground border border-border"
           placeholder="Email"
+          placeholderTextColor={palette.muted}
           autoCapitalize="none"
           keyboardType="email-address"
           autoComplete="email"
@@ -49,8 +55,9 @@ export function SignInScreen() {
           accessibilityLabel="Email address"
         />
         <TextInput
-          className="bg-surface-light dark:bg-surface rounded-xl px-4 py-3 text-foreground-light dark:text-foreground border border-black/10 dark:border-white/10"
+          className="bg-surface-elevated rounded-2xl px-4 py-4 text-foreground border border-border"
           placeholder="Password"
+          placeholderTextColor={palette.muted}
           secureTextEntry
           autoComplete="current-password"
           value={password}
@@ -69,7 +76,7 @@ export function SignInScreen() {
         <Text className="text-brand font-medium">Forgot password?</Text>
       </Pressable>
       <Pressable className="mt-3 items-center" onPress={() => navigation.navigate('SignUp')}>
-        <Text variant="caption">New to Citizens Bible Community? Create an account</Text>
+        <Text variant="caption">Need an account? <Text className="text-brand-light">Create one</Text></Text>
       </Pressable>
     </ScreenContainer>
   );

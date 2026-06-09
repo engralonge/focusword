@@ -8,9 +8,10 @@ type Props = {
 
 export function Header({ title, subtitle }: Props) {
   return (
-    <View className="px-4 pt-2 pb-4">
+    <View className="pt-3 pb-5">
+      <View className="w-8 h-[2px] rounded-full bg-brand/70 mb-3" />
       <Text variant="title">{title}</Text>
-      {subtitle ? <Text variant="caption" className="mt-1">{subtitle}</Text> : null}
+      {subtitle ? <Text variant="caption" className="mt-1.5 leading-5">{subtitle}</Text> : null}
     </View>
   );
 }

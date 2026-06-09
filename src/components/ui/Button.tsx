@@ -11,16 +11,16 @@ type Props = PressableProps & {
 };
 
 const variantClasses: Record<Variant, string> = {
-  primary: 'bg-brand active:opacity-80',
-  secondary: 'bg-surface border border-brand/30 active:opacity-80',
+  primary: 'bg-brand border border-brand-light/25 active:opacity-85',
+  secondary: 'bg-brand/10 border border-brand/30 active:bg-brand/15',
   ghost: 'bg-transparent active:opacity-70',
-  danger: 'bg-red-600 active:opacity-80',
+  danger: 'bg-red-700 active:opacity-80',
 };
 
 const textClasses: Record<Variant, string> = {
-  primary: 'text-background font-semibold',
-  secondary: 'text-brand font-semibold',
-  ghost: 'text-brand font-medium',
+  primary: 'text-ink font-semibold tracking-wide',
+  secondary: 'text-brand-light font-semibold',
+  ghost: 'text-brand-light font-medium',
   danger: 'text-white font-semibold',
 };
 
@@ -34,7 +34,7 @@ export function Button({
   return (
     <Pressable
       className={cn(
-        'rounded-xl px-5 py-3 items-center justify-center',
+        'min-h-[48px] rounded-2xl px-5 py-3 items-center justify-center',
         variantClasses[variant],
         disabled && 'opacity-50',
         className,

@@ -84,12 +84,12 @@ export function BibleScreen() {
 
   return (
     <>
-      <ScreenContainer contentClassName="px-4">
-        <Header title="Bible" subtitle="Search, read, and keep your study notes" />
-        <View className="flex-row items-center bg-surface-light dark:bg-surface rounded-xl px-3 mb-2 border border-black/5 dark:border-white/10">
-          <Ionicons name="search" size={18} color={palette.muted} />
+      <ScreenContainer contentClassName="px-5">
+        <Header title="Bible" subtitle="A peaceful space to read God's Word" />
+        <View className="flex-row items-center bg-surface-elevated rounded-2xl px-4 mb-3 border border-border">
+          <Ionicons name="search-outline" size={19} color={palette.brandMuted} />
           <TextInput
-            className="flex-1 py-3 px-2 text-base text-foreground-light dark:text-foreground"
+            className="flex-1 py-4 px-3 text-base text-foreground"
             placeholder="Search verses or type John 3:16"
             placeholderTextColor={palette.muted}
             value={query}
@@ -102,11 +102,11 @@ export function BibleScreen() {
           <Text variant="caption" className="mb-3">No verses found.</Text>
         ) : null}
         {results.length > 0 ? (
-          <Card className="mb-4">
+          <Card className="mb-5 border-brand/20">
             {results.slice(0, 10).map((result) => (
               <Pressable
                 key={`${result.reference}-${result.translation}`}
-                className="py-2 border-b border-black/5 dark:border-white/5"
+                className="py-3 border-b border-border-subtle"
                 onPress={() => {
                   setQuery('');
                   openReader(result.book, result.chapter, result.verse, result.translation);
@@ -121,43 +121,57 @@ export function BibleScreen() {
 
         {progress ? (
           <>
-            <Text variant="label" className="mb-2 mt-3">Continue reading</Text>
+            <Text variant="label" className="mb-3 mt-4">Your journey in the Word</Text>
             <Pressable
               onPress={() =>
                 openReader(progress.book, progress.chapter, progress.verse, progress.translation)
               }
             >
-              <Card className="mb-4">
-                <Text variant="subtitle">{progress.book} {progress.chapter}</Text>
-                <Text variant="caption" className="mt-1">
-                  {progress.translation}{progress.verse ? ` - verse ${progress.verse}` : ''}
-                </Text>
+              <Card className="mb-6 rounded-3xl border-brand/25 bg-brand/[0.06] p-5">
+                <View className="flex-row items-center justify-between">
+                  <View>
+                    <Text variant="subtitle">{progress.book} {progress.chapter}</Text>
+                    <Text variant="caption" className="mt-1">
+                      {progress.translation}{progress.verse ? ` - verse ${progress.verse}` : ''}
+                    </Text>
+                  </View>
+                  <View className="w-11 h-11 rounded-full bg-brand/12 border border-brand/25 items-center justify-center">
+                    <Ionicons name="arrow-forward" size={19} color={palette.brandLight} />
+                  </View>
+                </View>
               </Card>
             </Pressable>
           </>
         ) : null}
 
-        <Text variant="label" className="mb-2">Start reading</Text>
+        <Text variant="label" className="mb-3">Scripture focus</Text>
         {QUICK_PASSAGES.map((passage) => (
           <Pressable
             key={passage.label}
             onPress={() => openReader(passage.book, passage.chapter)}
           >
-            <Card className="mb-2">
-              <Text variant="subtitle">{passage.label}</Text>
-              <Text className="text-brand font-medium mt-1">Open reader</Text>
+            <Card className="mb-3 border-brand/15 bg-surface-elevated/80">
+              <View className="flex-row items-center gap-3">
+                <View className="w-10 h-10 rounded-xl bg-brand/10 items-center justify-center">
+                  <Ionicons name="book-outline" size={19} color={palette.brand} />
+                </View>
+                <View className="flex-1">
+                  <Text variant="subtitle">{passage.label}</Text>
+                  <Text className="text-brand-muted text-sm font-medium mt-1">Open in Bible</Text>
+                </View>
+              </View>
             </Card>
           </Pressable>
         ))}
 
         {bookmarks.length > 0 ? (
           <>
-            <Text variant="label" className="mb-2 mt-5">Bookmarks</Text>
+            <Text variant="label" className="mb-3 mt-6">Bookmarks</Text>
             <View className="flex-row flex-wrap gap-2">
               {bookmarks.map((bookmark) => (
                 <Pressable
                   key={bookmark.id}
-                  className="bg-surface-light dark:bg-surface px-3 py-2 rounded-lg border border-black/5 dark:border-white/5"
+                  className="bg-brand/[0.05] px-3 py-2 rounded-xl border border-brand/20"
                   onPress={() =>
                     openReader(
                       bookmark.book,
@@ -174,15 +188,15 @@ export function BibleScreen() {
           </>
         ) : null}
 
-        <Text variant="label" className="mb-2 mt-5">All books</Text>
+        <Text variant="label" className="mb-2 mt-7">All books</Text>
         {(['Old', 'New'] as const).map((testament) => (
           <View key={testament}>
-            <Text variant="subtitle" className="mt-2 mb-2">{testament} Testament</Text>
+            <Text variant="subtitle" className="mt-3 mb-3">{testament} Testament</Text>
             <View className="flex-row flex-wrap gap-2">
               {BIBLE_BOOKS.filter((book) => book.testament === testament).map((book) => (
                 <Pressable
                   key={book.id}
-                  className="bg-surface-light dark:bg-surface px-3 py-2 rounded-lg border border-black/5 dark:border-white/5"
+                  className="bg-surface-elevated px-3 py-2.5 rounded-xl border border-border"
                   onPress={() => setSelectedBook(book)}
                 >
                   <Text>{book.name}</Text>
@@ -200,7 +214,7 @@ export function BibleScreen() {
         presentationStyle="pageSheet"
         onRequestClose={() => setSelectedBook(null)}
       >
-        <ScreenContainer contentClassName="px-4">
+        <ScreenContainer contentClassName="px-5">
           <View className="flex-row items-center justify-between mt-2">
             <Text variant="title">{selectedBook?.name}</Text>
             <Pressable
@@ -219,7 +233,7 @@ export function BibleScreen() {
                 (chapter) => (
                   <Pressable
                     key={chapter}
-                    className="w-12 h-12 items-center justify-center rounded-lg bg-surface-light dark:bg-surface border border-black/5 dark:border-white/5"
+                    className="w-12 h-12 items-center justify-center rounded-xl bg-surface-elevated border border-border"
                     onPress={() => {
                       const book = selectedBook.name;
                       setSelectedBook(null);

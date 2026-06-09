@@ -3,7 +3,6 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import {
   NavigationContainer,
   DarkTheme,
-  DefaultTheme,
   type LinkingOptions,
 } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
@@ -30,14 +29,14 @@ const darkNavTheme = {
 };
 
 const lightNavTheme = {
-  ...DefaultTheme,
+  ...DarkTheme,
   colors: {
-    ...DefaultTheme.colors,
-    primary: palette.brandDark,
-    background: palette.backgroundLight,
-    card: palette.surfaceLight,
-    text: palette.brandDark,
-    border: '#E5E7EB',
+    ...DarkTheme.colors,
+    primary: palette.brand,
+    background: palette.backgroundDark,
+    card: palette.surfaceDark,
+    text: palette.foreground,
+    border: palette.borderSubtle,
   },
 };
 
@@ -49,7 +48,12 @@ const linking: LinkingOptions<RootStackParamList> = {
         screens: {
           Home: {
             screens: {
-              LiveHome: '',
+              HomeMain: '',
+            },
+          },
+          Live: {
+            screens: {
+              LiveHome: 'live',
               CreateStream: 'live/new',
               LiveStream: 'live/:streamId',
             },
@@ -98,7 +102,7 @@ function AppContent() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <NavigationContainer linking={linking} theme={isDark ? darkNavTheme : lightNavTheme}>
-        <StatusBar style={isDark ? 'light' : 'dark'} />
+        <StatusBar style="light" />
         <RootNavigator />
       </NavigationContainer>
     </GestureHandlerRootView>

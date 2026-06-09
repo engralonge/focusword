@@ -6,16 +6,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Header } from '@/components/common/Header';
 import { Text } from '@/components/ui/Text';
+import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/common/EmptyState';
 import { LiveStreamCard } from '@/components/live/LiveStreamCard';
-import type { HomeStackParamList } from '@/navigation/types';
+import type { LiveStackParamList } from '@/navigation/types';
 import type { LiveStream } from '@/types';
 import { fetchLiveStreams } from '@/services/streaming/streamingService';
-import { config } from '@/constants/config';
 import { palette } from '@/constants/colors';
 import { groupLiveStreams } from '@/utils/live';
 
-type Nav = NativeStackNavigationProp<HomeStackParamList, 'LiveHome'>;
+type Nav = NativeStackNavigationProp<LiveStackParamList, 'LiveHome'>;
 
 export function LiveHomeScreen() {
   const navigation = useNavigation<Nav>();
@@ -47,8 +47,17 @@ export function LiveHomeScreen() {
 
   return (
     <>
-      <ScreenContainer contentClassName="px-4">
-        <Header title={config.appName} subtitle="Study Scripture together in real time" />
+      <ScreenContainer contentClassName="px-5">
+        <Header title="Live studies" subtitle="Gather around God's Word in real time" />
+        <Card className="mb-6 rounded-3xl border-brand/20 bg-brand/[0.05] p-5">
+          <View className="w-11 h-11 rounded-xl bg-brand/12 border border-brand/20 items-center justify-center mb-4">
+            <Ionicons name="radio-outline" size={22} color={palette.brandLight} />
+          </View>
+          <Text variant="subtitle">Your Bible study</Text>
+          <Text variant="caption" className="mt-2 leading-5">
+            Read, discuss, and pray together with your community.
+          </Text>
+        </Card>
         {error ? (
           <Pressable onPress={() => void load()} accessibilityRole="button">
             <Text className="text-red-500 text-center mb-4">{error} Tap to retry.</Text>
@@ -63,7 +72,7 @@ export function LiveHomeScreen() {
         ) : null}
         {liveNow.length ? (
           <>
-            <Text variant="label" className="mb-2">Live now</Text>
+            <Text variant="label" className="mb-3">Live now</Text>
             {liveNow.map((stream) => (
               <LiveStreamCard key={stream.id} stream={stream} onPress={() => openStream(stream)} />
             ))}
@@ -71,7 +80,7 @@ export function LiveHomeScreen() {
         ) : null}
         {upcoming.length ? (
           <>
-            <Text variant="label" className="mt-5 mb-2">Upcoming</Text>
+            <Text variant="label" className="mt-6 mb-3">Upcoming</Text>
             {upcoming.map((stream) => (
               <LiveStreamCard key={stream.id} stream={stream} onPress={() => openStream(stream)} />
             ))}
@@ -79,7 +88,7 @@ export function LiveHomeScreen() {
         ) : null}
         {recent.length ? (
           <>
-            <Text variant="label" className="mt-5 mb-2">Recent</Text>
+            <Text variant="label" className="mt-6 mb-3">Recent gatherings</Text>
             {recent.map((stream) => (
               <LiveStreamCard key={stream.id} stream={stream} onPress={() => openStream(stream)} />
             ))}
@@ -88,12 +97,12 @@ export function LiveHomeScreen() {
         <View className="h-20" />
       </ScreenContainer>
       <Pressable
-        className="absolute bottom-8 right-4 w-14 h-14 rounded-full bg-brand items-center justify-center shadow-lg"
+        className="absolute bottom-8 right-5 w-14 h-14 rounded-2xl bg-brand items-center justify-center shadow-lg border border-brand-light/30"
         accessibilityRole="button"
         accessibilityLabel="Host a live Bible study"
         onPress={() => navigation.navigate('CreateStream')}
       >
-        <Ionicons name="add" size={28} color={palette.backgroundDark} />
+        <Ionicons name="videocam-outline" size={25} color={palette.backgroundDark} />
       </Pressable>
     </>
   );

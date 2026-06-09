@@ -9,15 +9,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Button } from '@/components/ui/Button';
 import { Text } from '@/components/ui/Text';
-import type { HomeStackParamList } from '@/navigation/types';
+import type { LiveStackParamList } from '@/navigation/types';
 import { createLiveStream } from '@/services/streaming/streamingService';
 import { useTheme } from '@/context/ThemeProvider';
 import { palette } from '@/constants/colors';
 
-type Nav = NativeStackNavigationProp<HomeStackParamList, 'CreateStream'>;
+type Nav = NativeStackNavigationProp<LiveStackParamList, 'CreateStream'>;
 
 const inputClass =
-  'rounded-lg border border-black/10 dark:border-white/10 bg-surface-light dark:bg-surface px-4 py-3 text-foreground-light dark:text-foreground';
+  'rounded-2xl border border-border bg-surface-elevated px-4 py-4 text-foreground';
 
 export function CreateStreamScreen() {
   const navigation = useNavigation<Nav>();
@@ -61,7 +61,11 @@ export function CreateStreamScreen() {
   };
 
   return (
-    <ScreenContainer contentClassName="px-4">
+    <ScreenContainer contentClassName="px-5">
+      <Text variant="title" className="mt-4">Gather in the Word</Text>
+      <Text variant="caption" className="mt-2 mb-5 leading-5">
+        Name your study and set the tone for your gathering.
+      </Text>
       <Text variant="label" className="mt-3 mb-2">Study title</Text>
       <TextInput
         className={inputClass}
@@ -102,7 +106,7 @@ export function CreateStreamScreen() {
           <Text variant="label" className="mb-2">Starts</Text>
           <View className="flex-row gap-3">
             <Pressable
-              className="flex-1 flex-row items-center gap-2 rounded-lg border border-black/10 dark:border-white/10 px-3 py-3"
+              className="flex-1 flex-row items-center gap-2 rounded-2xl border border-border bg-surface-elevated px-3 py-3"
               onPress={() => setPickerMode('date')}
               accessibilityRole="button"
               accessibilityLabel="Choose study date"
@@ -111,7 +115,7 @@ export function CreateStreamScreen() {
               <Text>{scheduledAt.toLocaleDateString()}</Text>
             </Pressable>
             <Pressable
-              className="flex-1 flex-row items-center gap-2 rounded-lg border border-black/10 dark:border-white/10 px-3 py-3"
+              className="flex-1 flex-row items-center gap-2 rounded-2xl border border-border bg-surface-elevated px-3 py-3"
               onPress={() => setPickerMode('time')}
               accessibilityRole="button"
               accessibilityLabel="Choose study time"

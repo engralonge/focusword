@@ -13,7 +13,7 @@ import { Text } from '@/components/ui/Text';
 import { LiveBadge } from '@/components/live/LiveBadge';
 import { LiveRoomView } from '@/components/live/LiveRoomView';
 import { Button } from '@/components/ui/Button';
-import type { HomeStackParamList } from '@/navigation/types';
+import type { LiveStackParamList } from '@/navigation/types';
 import type { LiveMessage, LiveStream } from '@/types';
 import {
   deleteLiveStream,
@@ -30,8 +30,8 @@ import {
 } from '@/services/notifications/notificationService';
 import { palette } from '@/constants/colors';
 
-type Route = RouteProp<HomeStackParamList, 'LiveStream'>;
-type Nav = NativeStackNavigationProp<HomeStackParamList, 'LiveStream'>;
+type Route = RouteProp<LiveStackParamList, 'LiveStream'>;
+type Nav = NativeStackNavigationProp<LiveStackParamList, 'LiveStream'>;
 type Credentials = Awaited<ReturnType<typeof getLiveKitCredentials>>;
 
 export function LiveStreamScreen() {

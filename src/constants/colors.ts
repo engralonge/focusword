@@ -1,21 +1,28 @@
 export const palette = {
-  brand: '#C9A227',
-  brandLight: '#E8D48B',
-  brandDark: '#9A7B1A',
-  backgroundDark: '#0F1419',
-  backgroundLight: '#F8F6F0',
-  surfaceDark: '#1A2332',
-  surfaceLight: '#FFFFFF',
-  muted: '#6B7280',
-  danger: '#EF4444',
-  success: '#22C55E',
+  brand: '#D4B87A',
+  brandLight: '#EBD9B0',
+  brandMuted: '#A89258',
+  brandDark: '#7D693D',
+  backgroundDark: '#050608',
+  backgroundLight: '#050608',
+  surfaceDark: '#0A0C10',
+  surfaceLight: '#0A0C10',
+  surfaceElevated: '#101318',
+  border: '#2A2A32',
+  borderSubtle: '#1B1D22',
+  foreground: '#F5F0E6',
+  scripture: '#F2E6C8',
+  muted: '#9A9BAA',
+  accent: '#C97A7A',
+  danger: '#D46D6D',
+  success: '#67B88A',
 } as const;
 
 export function getTabBarColors(isDark: boolean) {
   return {
-    active: palette.brand,
+    active: palette.brandLight,
     inactive: palette.muted,
-    background: isDark ? palette.surfaceDark : palette.surfaceLight,
-    border: isDark ? '#2D3748' : '#E5E7EB',
+    background: palette.backgroundDark,
+    border: palette.borderSubtle,
   };
 }

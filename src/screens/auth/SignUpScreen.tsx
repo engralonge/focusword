@@ -13,6 +13,7 @@ import {
   validatePasswordConfirmation,
   validateProfile,
 } from '@/utils/auth';
+import { palette } from '@/constants/colors';
 
 type Nav = NativeStackNavigationProp<AuthStackParamList, 'SignUp'>;
 
@@ -52,23 +53,26 @@ export function SignUpScreen() {
   };
 
   return (
-    <ScreenContainer contentClassName="px-4">
-      <Text variant="title" className="mt-4">Create your account</Text>
-      <Text variant="caption" className="mt-2">
-        Join live studies, post prayer requests, and keep your study activity synced.
+    <ScreenContainer contentClassName="px-6">
+      <Text variant="label" className="mt-5">Join the family of faith</Text>
+      <Text variant="title" className="mt-2">Create your account</Text>
+      <Text variant="caption" className="mt-3 leading-5">
+        Keep your reading journey, prayers, and community activity together.
       </Text>
       <View className="mt-6 gap-3">
         <TextInput
-          className="bg-surface-light dark:bg-surface rounded-xl px-4 py-3 text-foreground-light dark:text-foreground border border-black/10 dark:border-white/10"
+          className="bg-surface-elevated rounded-2xl px-4 py-4 text-foreground border border-border"
           placeholder="Display name"
+          placeholderTextColor={palette.muted}
           value={displayName}
           onChangeText={setDisplayName}
           autoComplete="name"
           accessibilityLabel="Display name"
         />
         <TextInput
-          className="bg-surface-light dark:bg-surface rounded-xl px-4 py-3 text-foreground-light dark:text-foreground border border-black/10 dark:border-white/10"
+          className="bg-surface-elevated rounded-2xl px-4 py-4 text-foreground border border-border"
           placeholder="Email"
+          placeholderTextColor={palette.muted}
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
@@ -77,8 +81,9 @@ export function SignUpScreen() {
           accessibilityLabel="Email address"
         />
         <TextInput
-          className="bg-surface-light dark:bg-surface rounded-xl px-4 py-3 text-foreground-light dark:text-foreground border border-black/10 dark:border-white/10"
+          className="bg-surface-elevated rounded-2xl px-4 py-4 text-foreground border border-border"
           placeholder="Password"
+          placeholderTextColor={palette.muted}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
@@ -86,8 +91,9 @@ export function SignUpScreen() {
           accessibilityLabel="Password"
         />
         <TextInput
-          className="bg-surface-light dark:bg-surface rounded-xl px-4 py-3 text-foreground-light dark:text-foreground border border-black/10 dark:border-white/10"
+          className="bg-surface-elevated rounded-2xl px-4 py-4 text-foreground border border-border"
           placeholder="Confirm password"
+          placeholderTextColor={palette.muted}
           value={confirmPassword}
           onChangeText={setConfirmPassword}
           secureTextEntry
@@ -104,7 +110,7 @@ export function SignUpScreen() {
         onPress={() => void handleSignUp()}
       />
       <Pressable className="mt-4 items-center" onPress={() => navigation.navigate('SignIn')}>
-        <Text variant="caption">Already have an account? Sign in</Text>
+        <Text variant="caption">Already have an account? <Text className="text-brand-light">Sign in</Text></Text>
       </Pressable>
     </ScreenContainer>
   );
