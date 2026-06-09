@@ -82,6 +82,14 @@ Deno.serve(async (request) => {
     .eq('id', userData.user.id)
     .maybeSingle();
   const isHost = stream.host_id === userData.user.id;
+  const { data: stageRequest } = await supabase
+    .from('live_stage_requests')
+    .select('status')
+    .eq('stream_id', stream.id)
+    .eq('user_id', userData.user.id)
+    .maybeSingle();
+  const stageStatus = stageRequest?.status ?? null;
+  const canPublish = isHost || stageStatus === 'approved';
   if (stream.status !== 'live' && !isHost) {
     return json({ error: 'This live study has not started yet' }, 409);
   }
@@ -97,7 +105,7 @@ Deno.serve(async (request) => {
     room: stream.room_name,
     roomJoin: true,
     roomAdmin: isHost,
-    canPublish: isHost,
+    canPublish,
     canPublishData: true,
     canSubscribe: true,
     canUpdateOwnMetadata: true,
@@ -107,5 +115,7 @@ Deno.serve(async (request) => {
     serverUrl: livekitUrl,
     token: await token.toJwt(),
     isHost,
+    canPublish,
+    stageStatus,
   });
 });

@@ -2,7 +2,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 
 export async function enforceRateLimit(
   request: Request,
-  action: 'ai_summary' | 'bible_content' | 'livekit_token',
+  action: 'ai_summary' | 'bible_content' | 'livekit_token' | 'livekit_stage',
 ): Promise<{ response?: Response; userId?: string }> {
   const authorization = request.headers.get('Authorization');
   const supabaseUrl = Deno.env.get('SUPABASE_URL');

@@ -7,6 +7,7 @@ type Props = {
   serverUrl: string;
   token: string;
   isHost: boolean;
+  canPublish: boolean;
   onParticipantCount: (count: number) => void;
   onError: (message: string) => void;
 };

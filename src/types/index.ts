@@ -36,6 +36,24 @@ export type LiveMessage = {
   createdAt: string;
 };
 
+export type LiveStageStatus =
+  | 'pending'
+  | 'approved'
+  | 'declined'
+  | 'removed'
+  | 'cancelled';
+
+export type LiveStageRequest = {
+  id: string;
+  streamId: string;
+  userId: string;
+  displayName: string;
+  status: LiveStageStatus;
+  isCurrentUser: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type BiblePassage = {
   book: string;
   chapter: number;

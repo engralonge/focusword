@@ -14,14 +14,17 @@ import { LiveBadge } from '@/components/live/LiveBadge';
 import { LiveRoomView } from '@/components/live/LiveRoomView';
 import { Button } from '@/components/ui/Button';
 import type { LiveStackParamList } from '@/navigation/types';
-import type { LiveMessage, LiveStream } from '@/types';
+import type { LiveMessage, LiveStageRequest, LiveStream } from '@/types';
 import {
   deleteLiveStream,
   fetchLiveMessages,
+  fetchLiveStageRequests,
   fetchStreamById,
   getLiveKitCredentials,
+  performLiveStageAction,
   sendLiveMessage,
   subscribeToLiveMessages,
+  subscribeToLiveStage,
   updateStreamStatus,
 } from '@/services/streaming/streamingService';
 import {
@@ -40,6 +43,7 @@ export function LiveStreamScreen() {
   const [stream, setStream] = useState<LiveStream | null>(null);
   const [credentials, setCredentials] = useState<Credentials | null>(null);
   const [messages, setMessages] = useState<LiveMessage[]>([]);
+  const [stageRequests, setStageRequests] = useState<LiveStageRequest[]>([]);
   const [draft, setDraft] = useState('');
   const [participantCount, setParticipantCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -51,6 +55,22 @@ export function LiveStreamScreen() {
       setMessages(await fetchLiveMessages(params.streamId));
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : 'Could not load live chat.');
+    }
+  }, [params.streamId]);
+
+  const loadStage = useCallback(async () => {
+    try {
+      setStageRequests(await fetchLiveStageRequests(params.streamId));
+    } catch (nextError) {
+      setError(nextError instanceof Error ? nextError.message : 'Could not load the live stage.');
+    }
+  }, [params.streamId]);
+
+  const refreshCredentials = useCallback(async () => {
+    try {
+      setCredentials(await getLiveKitCredentials(params.streamId));
+    } catch (nextError) {
+      setError(nextError instanceof Error ? nextError.message : 'Could not refresh the live room.');
     }
   }, [params.streamId]);
 
@@ -67,18 +87,19 @@ export function LiveStreamScreen() {
         const [nextCredentials] = await Promise.all([
           getLiveKitCredentials(nextStream.id),
           loadMessages(),
+          loadStage(),
         ]);
         setCredentials(nextCredentials);
       } else {
         setCredentials(null);
-        await loadMessages();
+        await Promise.all([loadMessages(), loadStage()]);
       }
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : 'Could not load the live study.');
     } finally {
       setLoading(false);
     }
-  }, [loadMessages, params.streamId]);
+  }, [loadMessages, loadStage, params.streamId]);
 
   useEffect(() => {
     void load();
@@ -88,6 +109,36 @@ export function LiveStreamScreen() {
     () => subscribeToLiveMessages(params.streamId, () => void loadMessages()),
     [loadMessages, params.streamId],
   );
+
+  useEffect(
+    () =>
+      subscribeToLiveStage(params.streamId, () => {
+        void loadStage();
+        if (!stream?.isHost && stream?.status === 'live') {
+          void refreshCredentials();
+        }
+      }),
+    [loadStage, params.streamId, refreshCredentials, stream?.isHost, stream?.status],
+  );
+
+  const changeStage = async (
+    action: 'request' | 'cancel' | 'approve' | 'decline' | 'remove',
+    targetUserId?: string,
+  ) => {
+    setWorking(true);
+    setError(null);
+    try {
+      await performLiveStageAction(params.streamId, action, targetUserId);
+      await loadStage();
+      if (!stream?.isHost) {
+        await refreshCredentials();
+      }
+    } catch (nextError) {
+      setError(nextError instanceof Error ? nextError.message : 'Could not update the stage.');
+    } finally {
+      setWorking(false);
+    }
+  };
 
   const updateStatus = async (status: 'live' | 'ended') => {
     setWorking(true);
@@ -174,6 +225,9 @@ export function LiveStreamScreen() {
         timeStyle: 'short',
       }).format(new Date(stream.scheduledAt))
     : null;
+  const ownStageRequest = stageRequests.find((request) => request.isCurrentUser);
+  const pendingStageRequests = stageRequests.filter((request) => request.status === 'pending');
+  const approvedGuests = stageRequests.filter((request) => request.status === 'approved');
 
   return (
     <ScreenContainer contentClassName="px-4">
@@ -212,12 +266,122 @@ export function LiveStreamScreen() {
       {stream.status === 'live' && credentials ? (
         <View className="mt-5">
           <LiveRoomView
+            key={credentials.token}
             serverUrl={credentials.serverUrl}
             token={credentials.token}
             isHost={credentials.isHost}
+            canPublish={credentials.canPublish}
             onParticipantCount={setParticipantCount}
             onError={setError}
           />
+          {stream.isHost ? (
+            <Card className="mt-4">
+              <View className="flex-row items-center justify-between">
+                <Text variant="subtitle">Guest stage</Text>
+                <Text variant="caption">{approvedGuests.length}/3 guests</Text>
+              </View>
+              {pendingStageRequests.length === 0 ? (
+                <Text variant="caption" className="mt-3">
+                  Guest requests will appear here.
+                </Text>
+              ) : (
+                pendingStageRequests.map((request) => (
+                  <View
+                    key={request.id}
+                    className="mt-3 pt-3 border-t border-white/10 flex-row items-center gap-2"
+                  >
+                    <View className="flex-1">
+                      <Text variant="label">{request.displayName}</Text>
+                      <Text variant="caption">Wants to join the conversation</Text>
+                    </View>
+                    <Pressable
+                      className="w-10 h-10 rounded-full bg-red-500/15 items-center justify-center"
+                      accessibilityRole="button"
+                      accessibilityLabel={`Decline ${request.displayName}`}
+                      disabled={working}
+                      onPress={() => void changeStage('decline', request.userId)}
+                    >
+                      <Ionicons name="close" size={22} color={palette.danger} />
+                    </Pressable>
+                    <Pressable
+                      className="w-10 h-10 rounded-full bg-brand/20 items-center justify-center"
+                      accessibilityRole="button"
+                      accessibilityLabel={`Approve ${request.displayName}`}
+                      disabled={working || approvedGuests.length >= 3}
+                      onPress={() => void changeStage('approve', request.userId)}
+                    >
+                      <Ionicons name="checkmark" size={22} color={palette.brandLight} />
+                    </Pressable>
+                  </View>
+                ))
+              )}
+              {approvedGuests.map((request) => (
+                <View
+                  key={request.id}
+                  className="mt-3 pt-3 border-t border-white/10 flex-row items-center"
+                >
+                  <View className="flex-1">
+                    <Text variant="label">{request.displayName}</Text>
+                    <Text variant="caption">On stage</Text>
+                  </View>
+                  <Button
+                    title="Return to audience"
+                    variant="secondary"
+                    className="min-h-[40px] px-3 py-2"
+                    disabled={working}
+                    onPress={() => void changeStage('remove', request.userId)}
+                  />
+                </View>
+              ))}
+            </Card>
+          ) : (
+            <Card className="mt-4">
+              <View className="flex-row items-center gap-3">
+                <View className="w-10 h-10 rounded-full bg-brand/15 items-center justify-center">
+                  <Ionicons
+                    name={credentials.canPublish ? 'mic' : 'hand-left-outline'}
+                    size={20}
+                    color={palette.brandLight}
+                  />
+                </View>
+                <View className="flex-1">
+                  <Text variant="label">
+                    {credentials.canPublish
+                      ? 'You are on stage'
+                      : ownStageRequest?.status === 'pending'
+                        ? 'Request sent'
+                        : 'Join the conversation'}
+                  </Text>
+                  <Text variant="caption" className="mt-1">
+                    {credentials.canPublish
+                      ? 'Use the microphone and camera controls above.'
+                      : ownStageRequest?.status === 'pending'
+                        ? 'The host will bring you up when ready.'
+                        : 'Ask the host to turn on your microphone and camera access.'}
+                  </Text>
+                </View>
+              </View>
+              {!credentials.canPublish ? (
+                <Button
+                  title={
+                    working
+                      ? 'Updating...'
+                      : ownStageRequest?.status === 'pending'
+                        ? 'Cancel request'
+                        : 'Request to join'
+                  }
+                  variant={ownStageRequest?.status === 'pending' ? 'secondary' : 'primary'}
+                  className="mt-4"
+                  disabled={working}
+                  onPress={() =>
+                    void changeStage(
+                      ownStageRequest?.status === 'pending' ? 'cancel' : 'request',
+                    )
+                  }
+                />
+              ) : null}
+            </Card>
+          )}
           {stream.isHost ? (
             <Button
               title={working ? 'Ending...' : 'End study'}

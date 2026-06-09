@@ -17,15 +17,17 @@ type Props = {
   serverUrl: string;
   token: string;
   isHost: boolean;
+  canPublish: boolean;
   onParticipantCount: (count: number) => void;
   onError: (message: string) => void;
 };
 
 function RoomContent({
   isHost,
+  canPublish,
   onParticipantCount,
   onError,
-}: Pick<Props, 'isHost' | 'onParticipantCount' | 'onError'>) {
+}: Pick<Props, 'isHost' | 'canPublish' | 'onParticipantCount' | 'onError'>) {
   const room = useRoomContext();
   const participants = useParticipants();
   const cameraTracks = useTracks([Track.Source.Camera]);
@@ -35,6 +37,16 @@ function RoomContent({
   useEffect(() => {
     onParticipantCount(participants.length);
   }, [onParticipantCount, participants.length]);
+
+  useEffect(() => {
+    if (canPublish) {
+      return;
+    }
+    setCameraEnabled(false);
+    setMicrophoneEnabled(false);
+    void room.localParticipant.setCameraEnabled(false);
+    void room.localParticipant.setMicrophoneEnabled(false);
+  }, [canPublish, room.localParticipant]);
 
   const toggleCamera = async () => {
     try {
@@ -56,23 +68,42 @@ function RoomContent({
     }
   };
 
-  const primaryTrack = cameraTracks.find(
-    (track) => track.participant.identity !== room.localParticipant.identity,
-  ) ?? cameraTracks[0];
+  const visibleTracks = cameraTracks.slice(0, 4);
+  const isGrid = visibleTracks.length > 1;
 
   return (
-    <View className="aspect-video bg-black rounded-lg overflow-hidden">
-      {primaryTrack ? (
-        <VideoTrack trackRef={primaryTrack} style={{ flex: 1 }} objectFit="cover" />
+    <View
+      className={`bg-black rounded-lg overflow-hidden ${
+        isGrid ? 'h-[420px] flex-row flex-wrap' : 'aspect-video'
+      }`}
+    >
+      {visibleTracks.length ? (
+        visibleTracks.map((track) => (
+          <View
+            key={`${track.participant.identity}:${track.source}`}
+            style={{
+              width: isGrid ? '50%' : '100%',
+              height: isGrid ? '50%' : '100%',
+            }}
+            className="border border-black"
+          >
+            <VideoTrack trackRef={track} style={{ flex: 1 }} objectFit="cover" />
+            <View className="absolute left-2 bottom-2 max-w-[80%] rounded-full bg-black/70 px-3 py-1">
+              <Text variant="caption" numberOfLines={1} className="text-white">
+                {track.participant.name || 'Guest'}
+              </Text>
+            </View>
+          </View>
+        ))
       ) : (
         <View className="flex-1 items-center justify-center px-6">
           <Ionicons name="videocam-off-outline" size={34} color={palette.muted} />
           <Text variant="caption" className="text-center mt-2">
-            {isHost ? 'Your camera is off.' : 'Waiting for the host video.'}
+            {canPublish ? 'Your camera is off.' : 'Waiting for someone to turn on video.'}
           </Text>
         </View>
       )}
-      {isHost ? (
+      {canPublish ? (
         <View className="absolute bottom-3 left-0 right-0 flex-row justify-center gap-3">
           <Pressable
             className="w-12 h-12 rounded-full bg-black/70 items-center justify-center"
@@ -124,6 +155,7 @@ export function LiveRoomView(props: Props) {
     >
       <RoomContent
         isHost={props.isHost}
+        canPublish={props.canPublish}
         onParticipantCount={props.onParticipantCount}
         onError={props.onError}
       />

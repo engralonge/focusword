@@ -1,4 +1,10 @@
-import type { LiveMessage, LiveStream, LiveStreamStatus } from '@/types';
+import type {
+  LiveMessage,
+  LiveStageRequest,
+  LiveStageStatus,
+  LiveStream,
+  LiveStreamStatus,
+} from '@/types';
 import { getSupabaseClient } from '@/services/supabase/client';
 import { validateLiveStudy } from '@/utils/live';
 
@@ -138,12 +144,16 @@ export async function getLiveKitCredentials(streamId: string): Promise<{
   serverUrl: string;
   token: string;
   isHost: boolean;
+  canPublish: boolean;
+  stageStatus: LiveStageStatus | null;
 }> {
   const { supabase } = await requireUser();
   const { data, error } = await supabase.functions.invoke<{
     serverUrl?: string;
     token?: string;
     isHost?: boolean;
+    canPublish?: boolean;
+    stageStatus?: LiveStageStatus | null;
     error?: string;
   }>('livekit-token', { body: { streamId } });
   if (error || !data?.serverUrl || !data.token) {
@@ -153,6 +163,73 @@ export async function getLiveKitCredentials(streamId: string): Promise<{
     serverUrl: data.serverUrl,
     token: data.token,
     isHost: Boolean(data.isHost),
+    canPublish: Boolean(data.canPublish),
+    stageStatus: data.stageStatus ?? null,
+  };
+}
+
+export async function fetchLiveStageRequests(
+  streamId: string,
+): Promise<LiveStageRequest[]> {
+  const { supabase, user } = await requireUser();
+  const { data, error } = await supabase
+    .from('live_stage_requests')
+    .select('id, stream_id, user_id, display_name, status, created_at, updated_at')
+    .eq('stream_id', streamId)
+    .order('created_at', { ascending: true });
+  if (error) {
+    throw new Error(error.message);
+  }
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    streamId: row.stream_id,
+    userId: row.user_id,
+    displayName: row.display_name,
+    status: row.status as LiveStageStatus,
+    isCurrentUser: row.user_id === user.id,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }));
+}
+
+export async function performLiveStageAction(
+  streamId: string,
+  action: 'request' | 'cancel' | 'approve' | 'decline' | 'remove',
+  targetUserId?: string,
+): Promise<void> {
+  const { supabase } = await requireUser();
+  const { data, error } = await supabase.functions.invoke<{ error?: string }>(
+    'livekit-stage',
+    { body: { streamId, action, targetUserId } },
+  );
+  if (error || data?.error) {
+    throw new Error(data?.error ?? error?.message ?? 'Could not update the live stage.');
+  }
+}
+
+export function subscribeToLiveStage(
+  streamId: string,
+  onChange: () => void,
+): (() => void) | undefined {
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    return undefined;
+  }
+  const channel = supabase
+    .channel(`live-stage:${streamId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'live_stage_requests',
+        filter: `stream_id=eq.${streamId}`,
+      },
+      onChange,
+    )
+    .subscribe();
+  return () => {
+    void supabase.removeChannel(channel);
   };
 }
 
