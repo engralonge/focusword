@@ -13,7 +13,7 @@ export async function summarizePassage(
   if (!supabase) {
     return {
       summary: '',
-      error: 'Connect FocusWord to Supabase to enable AI study tools.',
+      error: 'Connect Citizens Bible Community to Supabase to enable AI study tools.',
     };
   }
 

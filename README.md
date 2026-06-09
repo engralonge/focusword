@@ -1,4 +1,4 @@
-# FocusWord
+# Citizens Bible Community
 
 Bible study live streaming app built with **React Native**, **Expo**, **NativeWind**, and **Supabase**.
 

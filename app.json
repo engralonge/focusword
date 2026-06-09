@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "FocusWord",
+    "name": "Citizens Bible Community",
     "slug": "focusword",
     "owner": "frankalonge",
     "scheme": "focusword",
@@ -19,8 +19,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.focusword.app",
       "infoPlist": {
-        "NSCameraUsageDescription": "FocusWord uses your camera when you host or join an interactive live Bible study.",
-        "NSMicrophoneUsageDescription": "FocusWord uses your microphone when you host or join an interactive live Bible study."
+        "NSCameraUsageDescription": "Citizens Bible Community uses your camera when you host or join an interactive live Bible study.",
+        "NSMicrophoneUsageDescription": "Citizens Bible Community uses your microphone when you host or join an interactive live Bible study."
       },
       "bitcode": false
     },

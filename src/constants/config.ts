@@ -1,7 +1,7 @@
 export type AppEnvironment = 'development' | 'preview' | 'production';
 
 export const config = {
-  appName: 'FocusWord',
+  appName: 'Citizens Bible Community',
   environment: (process.env.EXPO_PUBLIC_ENVIRONMENT ?? 'development') as AppEnvironment,
   supabase: {
     url: process.env.EXPO_PUBLIC_SUPABASE_URL ?? '',

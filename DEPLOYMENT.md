@@ -1,4 +1,4 @@
-# FocusWord Production Deployment
+# Citizens Bible Community Production Deployment
 
 ## 1. Supabase
 

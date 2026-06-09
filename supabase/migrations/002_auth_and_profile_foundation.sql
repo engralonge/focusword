@@ -6,7 +6,7 @@ alter table public.profiles
   add column if not exists created_at timestamptz not null default now(),
   add column if not exists updated_at timestamptz not null default now();
 
--- Adopt profiles created by the legacy FocusWord schema.
+-- Adopt profiles created by the legacy Citizens Bible Community schema.
 do $$
 begin
   if exists (

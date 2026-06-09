@@ -13,7 +13,7 @@ describe('bibleService', () => {
 
   it('returns a clear fallback for unavailable chapters', async () => {
     await expect(fetchChapter('Genesis', 1, 'ESV')).rejects.toThrow(
-      'Connect FocusWord to load this chapter',
+      'Connect Citizens Bible Community to load this chapter',
     );
   });
 

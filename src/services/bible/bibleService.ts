@@ -64,7 +64,9 @@ export async function fetchChapter(
   if (offline) {
     return offline;
   }
-  throw new Error('Connect FocusWord to load this chapter. John 3 and Psalms 23 are available offline.');
+  throw new Error(
+    'Connect Citizens Bible Community to load this chapter. John 3 and Psalms 23 are available offline.',
+  );
 }
 
 function searchOffline(

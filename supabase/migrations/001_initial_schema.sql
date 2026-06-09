@@ -1,4 +1,4 @@
--- FocusWord initial schema
+-- Citizens Bible Community initial schema
 -- Run in Supabase SQL editor or via CLI
 
 create table if not exists public.profiles (

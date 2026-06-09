@@ -69,7 +69,7 @@ export function SignInScreen() {
         <Text className="text-brand font-medium">Forgot password?</Text>
       </Pressable>
       <Pressable className="mt-3 items-center" onPress={() => navigation.navigate('SignUp')}>
-        <Text variant="caption">New to FocusWord? Create an account</Text>
+        <Text variant="caption">New to Citizens Bible Community? Create an account</Text>
       </Pressable>
     </ScreenContainer>
   );

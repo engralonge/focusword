@@ -24,7 +24,7 @@ export class AppErrorBoundary extends Component<Props, State> {
     if (this.state.error) {
       return (
         <View className="flex-1 items-center justify-center px-6 bg-background-light dark:bg-background">
-          <Text variant="title" className="text-center">FocusWord needs a moment</Text>
+          <Text variant="title" className="text-center">Citizens Bible Community needs a moment</Text>
           <Text variant="body" className="text-center mt-3">
             Something unexpected happened. The issue has been recorded securely.
           </Text>

@@ -18,7 +18,7 @@ export function RootNavigator() {
     return (
       <View className="flex-1 items-center justify-center bg-background-light dark:bg-background">
         <ActivityIndicator color={palette.brand} />
-        <Text variant="caption" className="mt-3">Starting FocusWord...</Text>
+        <Text variant="caption" className="mt-3">Starting Citizens Bible Community...</Text>
       </View>
     );
   }

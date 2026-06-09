@@ -43,7 +43,7 @@ export async function scheduleLiveReminder(stream: LiveStream): Promise<void> {
   const notificationId = await Notifications.scheduleNotificationAsync({
     content: {
       title: `${stream.title} starts soon`,
-      body: `Join ${stream.hostName} on FocusWord in 10 minutes.`,
+      body: `Join ${stream.hostName} on Citizens Bible Community in 10 minutes.`,
       data: { url: `focusword://live/${stream.id}` },
     },
     trigger: {
