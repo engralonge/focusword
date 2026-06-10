@@ -3,6 +3,7 @@ import type { ProfileStackParamList } from '@/navigation/types';
 import { ProfileScreen } from '@/screens/profile/ProfileScreen';
 import { EditProfileScreen } from '@/screens/profile/EditProfileScreen';
 import { SettingsScreen } from '@/screens/profile/SettingsScreen';
+import { CommunityPointsScreen } from '@/screens/profile/CommunityPointsScreen';
 import { useTheme } from '@/context/ThemeProvider';
 import { palette } from '@/constants/colors';
 
@@ -19,6 +20,11 @@ export function ProfileStack() {
       }}
     >
       <Stack.Screen name="ProfileMain" component={ProfileScreen} options={{ headerShown: false }} />
+      <Stack.Screen
+        name="CommunityPoints"
+        component={CommunityPointsScreen}
+        options={{ headerShown: false }}
+      />
       <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: 'Edit profile' }} />
       <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
     </Stack.Navigator>

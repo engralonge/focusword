@@ -37,6 +37,7 @@ export type CommunityStackParamList = {
 
 export type ProfileStackParamList = {
   ProfileMain: undefined;
+  CommunityPoints: undefined;
   EditProfile: undefined;
   Settings: undefined;
 };

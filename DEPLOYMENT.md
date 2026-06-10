@@ -83,6 +83,8 @@ On physical iOS and Android devices, verify:
 - prayer progress updates, answered testimonies, anonymity, and timeline ownership policies;
 - Focus Mode consent, foreground-only time credit, interruption tracking, session recovery,
   and Android/iOS system-settings links;
+- community point awards, daily caps, streak calculations, immutable ledger behavior,
+  and clear non-monetary/non-transferable disclosures;
 - host and attendee LiveKit connections, moderated guest camera/microphone permissions,
   consent-based host invitations, speaking queue, individual and mute-all controls,
   synchronized live Scripture, translation changes, verse focus, shared AI insight,

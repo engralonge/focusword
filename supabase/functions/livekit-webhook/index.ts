@@ -52,9 +52,36 @@ Deno.serve(async (request) => {
   const supabase = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false },
   });
-  const { error } = await supabase
+  const { data: stream, error: streamError } = await supabase
     .from('live_streams')
     .update({ viewer_count: viewerCount })
-    .eq('room_name', roomName);
-  return error ? response('Database update failed', 500) : response('ok');
+    .eq('room_name', roomName)
+    .select('id')
+    .maybeSingle();
+  if (streamError) {
+    return response('Database update failed', 500);
+  }
+
+  const participantId = event.participant?.identity;
+  const participantSid = event.participant?.sid;
+  if (
+    stream &&
+    participantId &&
+    participantSid &&
+    ['participant_joined', 'participant_left', 'participant_connection_aborted'].includes(
+      event.event,
+    )
+  ) {
+    const { error: attendanceError } = await supabase.rpc('record_live_attendance', {
+      requested_stream_id: stream.id,
+      requested_user_id: participantId,
+      requested_participant_sid: participantSid,
+      requested_action: event.event === 'participant_joined' ? 'joined' : 'left',
+    });
+    if (attendanceError) {
+      return response('Attendance update failed', 500);
+    }
+  }
+
+  return response('ok');
 });

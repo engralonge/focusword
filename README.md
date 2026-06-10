@@ -13,6 +13,8 @@ Bible study live streaming app built with **React Native**, **Expo**, **NativeWi
 - Prayer journeys with chronological progress updates and answered-prayer testimonies
 - Opt-in Focus Mode with foreground study timers, interruption tracking, completion history,
   and transparent links to device quiet controls
+- Non-transferable community points for verified study, prayer, community, and live
+  participation, with streaks, an append-only ledger, and daily anti-abuse caps
 - LiveKit-powered native study rooms with moderated guest video, persistent chat, and a
   synchronized Scripture workspace for host-led passages, highlights, translations, and AI insight
 - Consent-based host invitations, speaking queue, individual guest mute, and mute-all controls
@@ -137,4 +139,6 @@ Production EAS environments must also define HTTPS values for
 
 - Configure API.Bible translation access and server secrets.
 - Configure LiveKit server secrets and deploy the token function.
+- Complete legal and economic review before adding purchases, redemption, transfers,
+  cryptocurrency, or token-based governance to community points.
 - Add store credentials and EAS project ownership before production submission.

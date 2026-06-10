@@ -37,6 +37,23 @@ export function ProfileScreen() {
           {session?.user.bio ?? 'Small faithful steps become a life of depth.'}
         </Text>
       </Card>
+      <Pressable
+        className="mt-5 flex-row items-center rounded-2xl border border-brand/25 bg-brand/[0.06] px-4 py-4 active:bg-brand/10"
+        accessibilityRole="button"
+        accessibilityLabel="Open community points"
+        onPress={() => navigation.navigate('CommunityPoints')}
+      >
+        <View className="w-11 h-11 rounded-xl bg-brand/12 items-center justify-center">
+          <Ionicons name="sparkles-outline" size={21} color={palette.brand} />
+        </View>
+        <View className="flex-1 ml-4">
+          <Text className="font-semibold">Community points</Text>
+          <Text variant="caption" className="mt-1">
+            Study consistency and service activity
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={palette.muted} />
+      </Pressable>
       <Text variant="label" className="mt-7 mb-3">Account</Text>
       <View className="rounded-2xl border border-border overflow-hidden bg-surface-elevated/80">
         <Pressable

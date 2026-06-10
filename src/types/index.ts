@@ -15,6 +15,31 @@ export type FocusSession = {
   completed: boolean;
 };
 
+export type CommunityPointKind =
+  | 'focus_completion'
+  | 'community_post'
+  | 'community_comment'
+  | 'prayer_support'
+  | 'testimony'
+  | 'live_host'
+  | 'live_attendance'
+  | 'live_stage';
+
+export type CommunityPointEvent = {
+  id: string;
+  kind: CommunityPointKind;
+  points: number;
+  createdAt: string;
+};
+
+export type CommunityPointOverview = {
+  totalPoints: number;
+  todayPoints: number;
+  currentStreak: number;
+  completedActions: number;
+  recentActivity: CommunityPointEvent[];
+};
+
 export type UserProfile = {
   id: string;
   displayName: string;
