@@ -1,4 +1,9 @@
-import type { CommunityComment, CommunityPost, PrayerRequest } from '@/types';
+import type {
+  CommunityComment,
+  CommunityPost,
+  PrayerRequest,
+  PrayerUpdate,
+} from '@/types';
 import { getSupabaseClient } from '@/services/supabase/client';
 
 type ProfileNameMap = Map<string, string>;
@@ -206,15 +211,24 @@ export async function fetchPrayerRequests(): Promise<PrayerRequest[]> {
     return [];
   }
 
-  const [profiles, supportResult] = await Promise.all([
+  const [profiles, supportResult, updatesResult] = await Promise.all([
     getProfileNames(supabase, prayers.map((prayer) => prayer.user_id)),
     supabase
       .from('prayer_support')
       .select('prayer_id, user_id')
       .in('prayer_id', prayers.map((prayer) => prayer.id)),
+    supabase
+      .from('prayer_updates')
+      .select('id, prayer_id, user_id, kind, body, created_at')
+      .in('prayer_id', prayers.map((prayer) => prayer.id))
+      .eq('status', 'published')
+      .order('created_at', { ascending: true }),
   ]);
   if (supportResult.error) {
     throw new Error(supportResult.error.message);
+  }
+  if (updatesResult.error) {
+    throw new Error(updatesResult.error.message);
   }
 
   return prayers.map((prayer) => {
@@ -231,10 +245,48 @@ export async function fetchPrayerRequests(): Promise<PrayerRequest[]> {
       supportCount: support.length,
       supportedByMe: support.some((item) => item.user_id === user.id),
       isOwner: prayer.user_id === user.id,
+      updates: (updatesResult.data ?? [])
+        .filter((item) => item.prayer_id === prayer.id)
+        .map((item) => ({
+          id: item.id,
+          prayerId: item.prayer_id,
+          kind: item.kind as PrayerUpdate['kind'],
+          body: item.body,
+          isOwner: item.user_id === user.id,
+          createdAt: item.created_at,
+        })),
       createdAt: prayer.created_at,
       updatedAt: prayer.updated_at,
     };
   });
+}
+
+export async function createPrayerUpdate(
+  prayerId: string,
+  kind: PrayerUpdate['kind'],
+  body: string,
+): Promise<void> {
+  const { supabase } = await requireUser();
+  const trimmed = body.trim();
+  if (!trimmed || trimmed.length > 3000) {
+    throw new Error('Prayer updates must be between 1 and 3,000 characters.');
+  }
+  const { error } = await supabase.rpc('publish_prayer_update', {
+    requested_prayer_id: prayerId,
+    requested_kind: kind,
+    requested_body: trimmed,
+  });
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
+export async function deletePrayerUpdate(id: string): Promise<void> {
+  const { supabase } = await requireUser();
+  const { error } = await supabase.from('prayer_updates').delete().eq('id', id);
+  if (error) {
+    throw new Error(error.message);
+  }
 }
 
 export async function createPrayerRequest(

@@ -93,8 +93,18 @@ export type PrayerRequest = {
   supportCount: number;
   supportedByMe: boolean;
   isOwner: boolean;
+  updates: PrayerUpdate[];
   createdAt: string;
   updatedAt: string;
+};
+
+export type PrayerUpdate = {
+  id: string;
+  prayerId: string;
+  kind: 'update' | 'testimony';
+  body: string;
+  isOwner: boolean;
+  createdAt: string;
 };
 
 export type CommunityPost = {

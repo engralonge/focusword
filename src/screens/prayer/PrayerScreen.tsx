@@ -7,9 +7,11 @@ import { Card } from '@/components/ui/Card';
 import { Text } from '@/components/ui/Text';
 import { EmptyState } from '@/components/common/EmptyState';
 import { ComposerModal } from '@/components/common/ComposerModal';
-import type { PrayerRequest } from '@/types';
+import type { PrayerRequest, PrayerUpdate } from '@/types';
 import {
+  createPrayerUpdate,
   createPrayerRequest,
+  deletePrayerUpdate,
   deletePrayerRequest,
   fetchPrayerRequests,
   togglePrayerSupport,
@@ -25,6 +27,9 @@ export function PrayerScreen() {
   const [draft, setDraft] = useState('');
   const [anonymous, setAnonymous] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [timelinePrayer, setTimelinePrayer] = useState<PrayerRequest | null>(null);
+  const [timelineKind, setTimelineKind] = useState<PrayerUpdate['kind']>('update');
+  const [timelineDraft, setTimelineDraft] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -109,6 +114,47 @@ export function PrayerScreen() {
     ]);
   };
 
+  const openTimelineComposer = (prayer: PrayerRequest) => {
+    setTimelinePrayer(prayer);
+    setTimelineKind(prayer.status === 'answered' ? 'testimony' : 'update');
+    setTimelineDraft('');
+  };
+
+  const publishTimelineEntry = async () => {
+    if (!timelinePrayer) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await createPrayerUpdate(timelinePrayer.id, timelineKind, timelineDraft);
+      setTimelinePrayer(null);
+      setTimelineDraft('');
+      await load();
+    } catch (nextError) {
+      setError(nextError instanceof Error ? nextError.message : 'Could not publish the update.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const removeTimelineEntry = (entry: PrayerUpdate) => {
+    Alert.alert('Delete this prayer update?', undefined, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => {
+          void deletePrayerUpdate(entry.id)
+            .then(load)
+            .catch((nextError: unknown) => {
+              setError(
+                nextError instanceof Error ? nextError.message : 'Could not delete the update.',
+              );
+            });
+        },
+      },
+    ]);
+  };
+
   return (
     <>
       <ScreenContainer contentClassName="px-5">
@@ -142,6 +188,57 @@ export function PrayerScreen() {
               ) : null}
             </View>
             <Text variant="body" className="mt-3 leading-7">{prayer.content}</Text>
+            {prayer.updates.length ? (
+              <View className="mt-5 border-l border-brand/30 pl-4">
+                <Text variant="label">Prayer journey</Text>
+                {prayer.updates.map((entry) => (
+                  <View key={entry.id} className="mt-4">
+                    <View className="flex-row items-center justify-between">
+                      <View className="flex-row items-center gap-2">
+                        <Ionicons
+                          name={
+                            entry.kind === 'testimony'
+                              ? 'sparkles-outline'
+                              : 'chatbubble-ellipses-outline'
+                          }
+                          size={17}
+                          color={
+                            entry.kind === 'testimony'
+                              ? palette.success
+                              : palette.brandMuted
+                          }
+                        />
+                        <Text
+                          className={
+                            entry.kind === 'testimony'
+                              ? 'text-green-500 text-xs font-semibold uppercase'
+                              : 'text-brand-muted text-xs font-semibold uppercase'
+                          }
+                        >
+                          {entry.kind === 'testimony' ? 'Testimony' : 'Update'}
+                        </Text>
+                      </View>
+                      {entry.isOwner ? (
+                        <Pressable
+                          className="w-9 h-9 items-center justify-center"
+                          accessibilityRole="button"
+                          accessibilityLabel="Delete prayer update"
+                          onPress={() => removeTimelineEntry(entry)}
+                        >
+                          <Ionicons name="trash-outline" size={17} color={palette.danger} />
+                        </Pressable>
+                      ) : null}
+                    </View>
+                    <Text className="mt-1 leading-6">{entry.body}</Text>
+                    <Text variant="caption" className="mt-1">
+                      {new Date(entry.createdAt).toLocaleDateString(undefined, {
+                        dateStyle: 'medium',
+                      })}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
             <View className="mt-4 pt-3 border-t border-border-subtle flex-row items-center justify-between">
               <Pressable
                 className="flex-row items-center gap-2 py-2"
@@ -160,6 +257,14 @@ export function PrayerScreen() {
               </Pressable>
               {prayer.isOwner ? (
                 <View className="flex-row">
+                  <Pressable
+                    className="w-10 h-10 items-center justify-center"
+                    accessibilityRole="button"
+                    accessibilityLabel="Add prayer update or testimony"
+                    onPress={() => openTimelineComposer(prayer)}
+                  >
+                    <Ionicons name="add-circle-outline" size={22} color={palette.brand} />
+                  </Pressable>
                   <Pressable
                     className="w-10 h-10 items-center justify-center"
                     accessibilityRole="button"
@@ -223,6 +328,52 @@ export function PrayerScreen() {
             trackColor={{ false: palette.muted, true: palette.brand }}
           />
         </View>
+      </ComposerModal>
+      <ComposerModal
+        visible={Boolean(timelinePrayer)}
+        title={timelineKind === 'testimony' ? 'Share testimony' : 'Prayer update'}
+        value={timelineDraft}
+        placeholder={
+          timelineKind === 'testimony'
+            ? 'Share how this prayer was answered...'
+            : 'What has changed since this request was shared?'
+        }
+        submitTitle={
+          timelineKind === 'testimony' ? 'Publish testimony' : 'Publish update'
+        }
+        maxLength={3000}
+        loading={saving}
+        error={timelinePrayer ? error : null}
+        onChangeText={setTimelineDraft}
+        onClose={() => setTimelinePrayer(null)}
+        onSubmit={() => void publishTimelineEntry()}
+      >
+        <View className="mt-4 flex-row rounded-xl border border-border bg-surface-elevated p-1">
+          {(['update', 'testimony'] as const).map((kind) => (
+            <Pressable
+              key={kind}
+              className={`flex-1 rounded-lg py-3 items-center ${
+                timelineKind === kind ? 'bg-brand/20 border border-brand/35' : ''
+              }`}
+              onPress={() => setTimelineKind(kind)}
+            >
+              <Text
+                className={
+                  timelineKind === kind
+                    ? 'text-brand-light font-semibold'
+                    : 'text-muted font-medium'
+                }
+              >
+                {kind === 'update' ? 'Progress update' : 'Testimony'}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+        {timelineKind === 'testimony' ? (
+          <Text variant="caption" className="mt-3">
+            Publishing a testimony will mark this prayer as answered.
+          </Text>
+        ) : null}
       </ComposerModal>
     </>
   );

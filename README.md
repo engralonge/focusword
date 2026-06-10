@@ -10,6 +10,7 @@ Bible study live streaming app built with **React Native**, **Expo**, **NativeWi
 - NativeWind (Tailwind) styling with light / dark / system theme
 - Supabase email auth with verification and password recovery
 - Owned community posts, comments, reactions, prayer requests, and prayer support
+- Prayer journeys with chronological progress updates and answered-prayer testimonies
 - LiveKit-powered native study rooms with moderated guest video, persistent chat, and a
   synchronized Scripture workspace for host-led passages, highlights, translations, and AI insight
 - Consent-based host invitations, speaking queue, individual guest mute, and mute-all controls

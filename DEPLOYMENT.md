@@ -80,6 +80,7 @@ On physical iOS and Android devices, verify:
 - sign-up, email verification, password reset, sign-out, and account deletion;
 - Bible browsing, provider copyright, search, notes, highlights, bookmarks, and summaries;
 - community posts, comments, reactions, prayers, and moderation policies;
+- prayer progress updates, answered testimonies, anonymity, and timeline ownership policies;
 - host and attendee LiveKit connections, moderated guest camera/microphone permissions,
   consent-based host invitations, speaking queue, individual and mute-all controls,
   synchronized live Scripture, translation changes, verse focus, shared AI insight,
