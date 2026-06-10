@@ -2,6 +2,7 @@ import type { NavigatorScreenParams } from '@react-navigation/native';
 
 export type HomeStackParamList = {
   HomeMain: undefined;
+  FocusMode: undefined;
 };
 
 export type LiveStackParamList = {

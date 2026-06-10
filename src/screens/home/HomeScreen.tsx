@@ -153,6 +153,11 @@ export function HomeScreen() {
           onPress={() => navigation.navigate('Live', { screen: 'LiveHome' })}
         />
         <QuickAction
+          icon="moon-outline"
+          label="Focus Mode"
+          onPress={() => navigation.navigate('Home', { screen: 'FocusMode' })}
+        />
+        <QuickAction
           icon="heart-outline"
           label="Prayer board"
           onPress={() => navigation.navigate('Prayer', { screen: 'PrayerMain' })}

@@ -1,5 +1,20 @@
 export type ThemeMode = 'system' | 'light' | 'dark';
 
+export type FocusPreference = {
+  consentedAt: string;
+  consentVersion: string;
+};
+
+export type FocusSession = {
+  id: string;
+  plannedSeconds: number;
+  focusedSeconds: number;
+  interruptionCount: number;
+  startedAt: string;
+  endedAt?: string;
+  completed: boolean;
+};
+
 export type UserProfile = {
   id: string;
   displayName: string;
