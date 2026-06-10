@@ -196,7 +196,17 @@ export async function fetchLiveStageRequests(
 
 export async function performLiveStageAction(
   streamId: string,
-  action: 'request' | 'cancel' | 'approve' | 'decline' | 'remove',
+  action:
+    | 'request'
+    | 'cancel'
+    | 'invite'
+    | 'accept_invite'
+    | 'decline_invite'
+    | 'approve'
+    | 'decline'
+    | 'remove'
+    | 'mute'
+    | 'mute_all',
   targetUserId?: string,
 ): Promise<void> {
   const { supabase } = await requireUser();

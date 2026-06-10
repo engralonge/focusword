@@ -2,6 +2,7 @@ import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '@/components/ui/Text';
 import { palette } from '@/constants/colors';
+import type { LiveRoomParticipant } from '@/types';
 
 type Props = {
   serverUrl: string;
@@ -9,6 +10,7 @@ type Props = {
   isHost: boolean;
   canPublish: boolean;
   onParticipantCount: (count: number) => void;
+  onParticipantsChange: (participants: LiveRoomParticipant[]) => void;
   onError: (message: string) => void;
 };
 

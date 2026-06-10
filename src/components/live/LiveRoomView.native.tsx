@@ -12,6 +12,7 @@ import {
 import { Track } from 'livekit-client';
 import { Text } from '@/components/ui/Text';
 import { palette } from '@/constants/colors';
+import type { LiveRoomParticipant } from '@/types';
 
 type Props = {
   serverUrl: string;
@@ -19,6 +20,7 @@ type Props = {
   isHost: boolean;
   canPublish: boolean;
   onParticipantCount: (count: number) => void;
+  onParticipantsChange: (participants: LiveRoomParticipant[]) => void;
   onError: (message: string) => void;
 };
 
@@ -26,8 +28,12 @@ function RoomContent({
   isHost,
   canPublish,
   onParticipantCount,
+  onParticipantsChange,
   onError,
-}: Pick<Props, 'isHost' | 'canPublish' | 'onParticipantCount' | 'onError'>) {
+}: Pick<
+  Props,
+  'isHost' | 'canPublish' | 'onParticipantCount' | 'onParticipantsChange' | 'onError'
+>) {
   const room = useRoomContext();
   const participants = useParticipants();
   const cameraTracks = useTracks([Track.Source.Camera]);
@@ -36,7 +42,23 @@ function RoomContent({
 
   useEffect(() => {
     onParticipantCount(participants.length);
-  }, [onParticipantCount, participants.length]);
+    onParticipantsChange(
+      participants.map((participant) => ({
+        userId: participant.identity,
+        displayName: participant.name || 'Community member',
+        isMicrophoneEnabled: participant.isMicrophoneEnabled,
+        isCameraEnabled: participant.isCameraEnabled,
+        isSpeaking: participant.isSpeaking,
+      })),
+    );
+    setCameraEnabled(room.localParticipant.isCameraEnabled);
+    setMicrophoneEnabled(room.localParticipant.isMicrophoneEnabled);
+  }, [
+    onParticipantCount,
+    onParticipantsChange,
+    participants,
+    room.localParticipant,
+  ]);
 
   useEffect(() => {
     if (canPublish) {
@@ -157,6 +179,7 @@ export function LiveRoomView(props: Props) {
         isHost={props.isHost}
         canPublish={props.canPublish}
         onParticipantCount={props.onParticipantCount}
+        onParticipantsChange={props.onParticipantsChange}
         onError={props.onError}
       />
     </LiveKitRoom>

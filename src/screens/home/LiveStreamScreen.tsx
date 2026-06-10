@@ -15,7 +15,12 @@ import { LiveRoomView } from '@/components/live/LiveRoomView';
 import { LiveBibleWorkspace } from '@/components/live/LiveBibleWorkspace';
 import { Button } from '@/components/ui/Button';
 import type { LiveStackParamList } from '@/navigation/types';
-import type { LiveMessage, LiveStageRequest, LiveStream } from '@/types';
+import type {
+  LiveMessage,
+  LiveRoomParticipant,
+  LiveStageRequest,
+  LiveStream,
+} from '@/types';
 import {
   deleteLiveStream,
   fetchLiveMessages,
@@ -45,6 +50,7 @@ export function LiveStreamScreen() {
   const [credentials, setCredentials] = useState<Credentials | null>(null);
   const [messages, setMessages] = useState<LiveMessage[]>([]);
   const [stageRequests, setStageRequests] = useState<LiveStageRequest[]>([]);
+  const [roomParticipants, setRoomParticipants] = useState<LiveRoomParticipant[]>([]);
   const [draft, setDraft] = useState('');
   const [participantCount, setParticipantCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -123,7 +129,17 @@ export function LiveStreamScreen() {
   );
 
   const changeStage = async (
-    action: 'request' | 'cancel' | 'approve' | 'decline' | 'remove',
+    action:
+      | 'request'
+      | 'cancel'
+      | 'invite'
+      | 'accept_invite'
+      | 'decline_invite'
+      | 'approve'
+      | 'decline'
+      | 'remove'
+      | 'mute'
+      | 'mute_all',
     targetUserId?: string,
   ) => {
     setWorking(true);
@@ -229,6 +245,12 @@ export function LiveStreamScreen() {
   const ownStageRequest = stageRequests.find((request) => request.isCurrentUser);
   const pendingStageRequests = stageRequests.filter((request) => request.status === 'pending');
   const approvedGuests = stageRequests.filter((request) => request.status === 'approved');
+  const invitedGuests = stageRequests.filter((request) => request.status === 'invited');
+  const audienceMembers = roomParticipants.filter((participant) => {
+    if (participant.userId === stream.hostId) return false;
+    const request = stageRequests.find((item) => item.userId === participant.userId);
+    return !request || ['declined', 'removed', 'cancelled'].includes(request.status);
+  });
 
   return (
     <ScreenContainer contentClassName="px-4">
@@ -273,6 +295,7 @@ export function LiveStreamScreen() {
             isHost={credentials.isHost}
             canPublish={credentials.canPublish}
             onParticipantCount={setParticipantCount}
+            onParticipantsChange={setRoomParticipants}
             onError={setError}
           />
           <LiveBibleWorkspace
@@ -283,12 +306,32 @@ export function LiveStreamScreen() {
           {stream.isHost ? (
             <Card className="mt-4">
               <View className="flex-row items-center justify-between">
-                <Text variant="subtitle">Guest stage</Text>
+                <View>
+                  <Text variant="subtitle">Guest stage</Text>
+                  <Text variant="caption" className="mt-1">
+                    Speaking queue and room controls
+                  </Text>
+                </View>
                 <Text variant="caption">{approvedGuests.length}/3 guests</Text>
               </View>
+              {approvedGuests.some((request) => {
+                const participant = roomParticipants.find(
+                  (item) => item.userId === request.userId,
+                );
+                return participant?.isMicrophoneEnabled;
+              }) ? (
+                <Button
+                  title={working ? 'Muting...' : 'Mute all guests'}
+                  variant="secondary"
+                  className="mt-4"
+                  disabled={working}
+                  onPress={() => void changeStage('mute_all')}
+                />
+              ) : null}
+              <Text variant="label" className="mt-5">Speaking queue</Text>
               {pendingStageRequests.length === 0 ? (
                 <Text variant="caption" className="mt-3">
-                  Guest requests will appear here.
+                  No one is waiting to speak.
                 </Text>
               ) : (
                 pendingStageRequests.map((request) => (
@@ -321,24 +364,106 @@ export function LiveStreamScreen() {
                   </View>
                 ))
               )}
+              {invitedGuests.length ? (
+                <>
+                  <Text variant="label" className="mt-5">Invited</Text>
+                  {invitedGuests.map((request) => (
+                    <View
+                      key={request.id}
+                      className="mt-3 pt-3 border-t border-white/10 flex-row items-center"
+                    >
+                      <View className="flex-1">
+                        <Text variant="label">{request.displayName}</Text>
+                        <Text variant="caption">Waiting for their response</Text>
+                      </View>
+                      <Ionicons name="time-outline" size={20} color={palette.brandMuted} />
+                    </View>
+                  ))}
+                </>
+              ) : null}
+              {approvedGuests.length ? (
+                <Text variant="label" className="mt-5">On stage</Text>
+              ) : null}
               {approvedGuests.map((request) => (
-                <View
-                  key={request.id}
-                  className="mt-3 pt-3 border-t border-white/10 flex-row items-center"
-                >
-                  <View className="flex-1">
-                    <Text variant="label">{request.displayName}</Text>
-                    <Text variant="caption">On stage</Text>
-                  </View>
-                  <Button
-                    title="Return to audience"
-                    variant="secondary"
-                    className="min-h-[40px] px-3 py-2"
-                    disabled={working}
-                    onPress={() => void changeStage('remove', request.userId)}
-                  />
-                </View>
+                (() => {
+                  const participant = roomParticipants.find(
+                    (item) => item.userId === request.userId,
+                  );
+                  return (
+                    <View
+                      key={request.id}
+                      className="mt-3 pt-3 border-t border-white/10 flex-row items-center gap-2"
+                    >
+                      <View className="flex-1">
+                        <View className="flex-row items-center gap-2">
+                          <Text variant="label">{request.displayName}</Text>
+                          {participant?.isSpeaking ? (
+                            <View className="w-2 h-2 rounded-full bg-green-500" />
+                          ) : null}
+                        </View>
+                        <Text variant="caption">
+                          {!participant
+                            ? 'Reconnecting'
+                            : participant.isMicrophoneEnabled
+                              ? 'Microphone live'
+                              : 'Microphone muted'}
+                        </Text>
+                      </View>
+                      <Pressable
+                        className="w-10 h-10 rounded-full bg-brand/10 items-center justify-center"
+                        accessibilityRole="button"
+                        accessibilityLabel={`Mute ${request.displayName}`}
+                        disabled={working || !participant?.isMicrophoneEnabled}
+                        onPress={() => void changeStage('mute', request.userId)}
+                      >
+                        <Ionicons
+                          name={participant?.isMicrophoneEnabled ? 'mic' : 'mic-off'}
+                          size={20}
+                          color={
+                            participant?.isMicrophoneEnabled
+                              ? palette.brandLight
+                              : palette.muted
+                          }
+                        />
+                      </Pressable>
+                      <Pressable
+                        className="w-10 h-10 rounded-full bg-red-500/15 items-center justify-center"
+                        accessibilityRole="button"
+                        accessibilityLabel={`Return ${request.displayName} to audience`}
+                        disabled={working}
+                        onPress={() => void changeStage('remove', request.userId)}
+                      >
+                        <Ionicons name="arrow-down" size={20} color={palette.danger} />
+                      </Pressable>
+                    </View>
+                  );
+                })()
               ))}
+              <Text variant="label" className="mt-5">Connected audience</Text>
+              {audienceMembers.length === 0 ? (
+                <Text variant="caption" className="mt-3">
+                  No available audience members to invite.
+                </Text>
+              ) : (
+                audienceMembers.map((participant) => (
+                  <View
+                    key={participant.userId}
+                    className="mt-3 pt-3 border-t border-white/10 flex-row items-center"
+                  >
+                    <View className="flex-1">
+                      <Text variant="label">{participant.displayName}</Text>
+                      <Text variant="caption">Listening in the audience</Text>
+                    </View>
+                    <Button
+                      title="Invite"
+                      variant="secondary"
+                      className="min-h-[40px] px-4 py-2"
+                      disabled={working || approvedGuests.length >= 3}
+                      onPress={() => void changeStage('invite', participant.userId)}
+                    />
+                  </View>
+                ))
+              )}
             </Card>
           ) : (
             <Card className="mt-4">
@@ -354,6 +479,8 @@ export function LiveStreamScreen() {
                   <Text variant="label">
                     {credentials.canPublish
                       ? 'You are on stage'
+                      : ownStageRequest?.status === 'invited'
+                        ? 'The host invited you'
                       : ownStageRequest?.status === 'pending'
                         ? 'Request sent'
                         : 'Join the conversation'}
@@ -361,13 +488,31 @@ export function LiveStreamScreen() {
                   <Text variant="caption" className="mt-1">
                     {credentials.canPublish
                       ? 'Use the microphone and camera controls above.'
+                      : ownStageRequest?.status === 'invited'
+                        ? 'Accept when you are ready to join with camera and microphone controls.'
                       : ownStageRequest?.status === 'pending'
                         ? 'The host will bring you up when ready.'
                         : 'Ask the host to turn on your microphone and camera access.'}
                   </Text>
                 </View>
               </View>
-              {!credentials.canPublish ? (
+              {ownStageRequest?.status === 'invited' && !credentials.canPublish ? (
+                <View className="mt-4 flex-row gap-2">
+                  <Button
+                    title="Not now"
+                    variant="secondary"
+                    className="flex-1"
+                    disabled={working}
+                    onPress={() => void changeStage('decline_invite')}
+                  />
+                  <Button
+                    title={working ? 'Joining...' : 'Accept invitation'}
+                    className="flex-1"
+                    disabled={working}
+                    onPress={() => void changeStage('accept_invite')}
+                  />
+                </View>
+              ) : !credentials.canPublish ? (
                 <Button
                   title={
                     working

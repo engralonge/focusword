@@ -1,6 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { RoomServiceClient } from 'npm:livekit-server-sdk@2';
+import { TrackSource } from 'npm:@livekit/protocol';
 import { enforceRateLimit, rateLimitMessage } from '../_shared/rateLimit.ts';
 
 const corsHeaders = {
@@ -8,7 +9,17 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-type StageAction = 'request' | 'cancel' | 'approve' | 'decline' | 'remove';
+type StageAction =
+  | 'request'
+  | 'cancel'
+  | 'invite'
+  | 'accept_invite'
+  | 'decline_invite'
+  | 'approve'
+  | 'decline'
+  | 'remove'
+  | 'mute'
+  | 'mute_all';
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -18,7 +29,18 @@ function json(body: unknown, status = 200): Response {
 }
 
 function isStageAction(value: unknown): value is StageAction {
-  return ['request', 'cancel', 'approve', 'decline', 'remove'].includes(String(value));
+  return [
+    'request',
+    'cancel',
+    'invite',
+    'accept_invite',
+    'decline_invite',
+    'approve',
+    'decline',
+    'remove',
+    'mute',
+    'mute_all',
+  ].includes(String(value));
 }
 
 Deno.serve(async (request) => {
@@ -103,9 +125,47 @@ Deno.serve(async (request) => {
 
   const userId = userData.user.id;
   const isHost = stream.host_id === userId;
-  if (action === 'request' || action === 'cancel') {
+  const roomService = new RoomServiceClient(
+    livekitUrl.replace(/^wss:/, 'https:').replace(/^ws:/, 'http:'),
+    livekitApiKey,
+    livekitApiSecret,
+  );
+
+  if (
+    action === 'request' ||
+    action === 'cancel' ||
+    action === 'accept_invite' ||
+    action === 'decline_invite'
+  ) {
     if (isHost) {
       return json({ error: 'The host is already on stage' }, 409);
+    }
+
+    const { data: currentRequest } = await admin
+      .from('live_stage_requests')
+      .select('id, status')
+      .eq('stream_id', streamId)
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (
+      (action === 'accept_invite' || action === 'decline_invite') &&
+      currentRequest?.status !== 'invited'
+    ) {
+      return json({ error: 'This stage invitation is no longer active' }, 409);
+    }
+    if (action === 'accept_invite') {
+      const { count, error: countError } = await admin
+        .from('live_stage_requests')
+        .select('id', { count: 'exact', head: true })
+        .eq('stream_id', streamId)
+        .eq('status', 'approved')
+        .neq('user_id', userId);
+      if (countError) {
+        return json({ error: countError.message }, 500);
+      }
+      if ((count ?? 0) >= 3) {
+        return json({ error: 'The guest stage is currently full' }, 409);
+      }
     }
 
     const { data: profile } = await admin
@@ -115,7 +175,14 @@ Deno.serve(async (request) => {
       .maybeSingle();
     const displayName =
       profile?.display_name?.trim() || userData.user.email?.split('@')[0] || 'Member';
-    const status = action === 'request' ? 'pending' : 'cancelled';
+    const status =
+      action === 'request'
+        ? 'pending'
+        : action === 'accept_invite'
+          ? 'approved'
+          : action === 'decline_invite'
+            ? 'declined'
+            : 'cancelled';
     const { error } = await admin.from('live_stage_requests').upsert(
       {
         stream_id: streamId,
@@ -128,14 +195,84 @@ Deno.serve(async (request) => {
     if (error) {
       return json({ error: error.message }, 500);
     }
+    if (action === 'accept_invite') {
+      try {
+        await roomService.updateParticipant(stream.room_name, userId, {
+          permission: {
+            canSubscribe: true,
+            canPublish: true,
+            canPublishData: true,
+            canUpdateOwnMetadata: true,
+          },
+        });
+      } catch (error) {
+        console.warn('Could not promote the connected invited participant', error);
+      }
+    }
     return json({ status });
   }
 
   if (!isHost) {
     return json({ error: 'Only the host can manage the stage' }, 403);
   }
+  if (action === 'mute_all') {
+    try {
+      const participants = await roomService.listParticipants(stream.room_name);
+      const microphoneTracks = participants
+        .filter((participant) => participant.identity !== stream.host_id)
+        .flatMap((participant) =>
+          participant.tracks
+            .filter((track) => track.source === TrackSource.MICROPHONE && !track.muted)
+            .map((track) => ({
+              identity: participant.identity,
+              sid: track.sid,
+            })),
+        );
+      await Promise.all(
+        microphoneTracks.map((track) =>
+          roomService.mutePublishedTrack(
+            stream.room_name,
+            track.identity,
+            track.sid,
+            true,
+          ),
+        ),
+      );
+      return json({ mutedCount: microphoneTracks.length });
+    } catch (error) {
+      console.error('Could not mute the guest stage', error);
+      return json({ error: 'Could not mute the guest stage' }, 502);
+    }
+  }
+
   if (!targetUserId || targetUserId === stream.host_id) {
     return json({ error: 'A valid guest is required' }, 400);
+  }
+
+  if (action === 'invite') {
+    try {
+      await roomService.getParticipant(stream.room_name, targetUserId);
+    } catch {
+      return json({ error: 'This audience member is no longer connected' }, 409);
+    }
+    const { data: profile } = await admin
+      .from('profiles')
+      .select('display_name')
+      .eq('id', targetUserId)
+      .maybeSingle();
+    const { error } = await admin.from('live_stage_requests').upsert(
+      {
+        stream_id: streamId,
+        user_id: targetUserId,
+        display_name: (profile?.display_name?.trim() || 'Community member').slice(0, 80),
+        status: 'invited',
+      },
+      { onConflict: 'stream_id,user_id' },
+    );
+    if (error) {
+      return json({ error: error.message }, 500);
+    }
+    return json({ status: 'invited' });
   }
 
   const { data: stageRequest, error: requestError } = await admin
@@ -146,6 +283,31 @@ Deno.serve(async (request) => {
     .maybeSingle();
   if (requestError || !stageRequest) {
     return json({ error: 'Stage request not found' }, 404);
+  }
+
+  if (action === 'mute') {
+    try {
+      const participant = await roomService.getParticipant(
+        stream.room_name,
+        targetUserId,
+      );
+      const microphoneTrack = participant.tracks.find(
+        (track) => track.source === TrackSource.MICROPHONE,
+      );
+      if (!microphoneTrack || microphoneTrack.muted) {
+        return json({ mutedCount: 0 });
+      }
+      await roomService.mutePublishedTrack(
+        stream.room_name,
+        targetUserId,
+        microphoneTrack.sid,
+        true,
+      );
+      return json({ mutedCount: 1 });
+    } catch (error) {
+      console.error('Could not mute participant', error);
+      return json({ error: 'Could not mute this participant' }, 502);
+    }
   }
 
   if (action === 'approve') {
@@ -173,11 +335,6 @@ Deno.serve(async (request) => {
     return json({ error: updateError.message }, 500);
   }
 
-  const roomService = new RoomServiceClient(
-    livekitUrl.replace(/^wss:/, 'https:').replace(/^ws:/, 'http:'),
-    livekitApiKey,
-    livekitApiSecret,
-  );
   try {
     await roomService.updateParticipant(stream.room_name, targetUserId, {
       permission: {

@@ -12,6 +12,7 @@ Bible study live streaming app built with **React Native**, **Expo**, **NativeWi
 - Owned community posts, comments, reactions, prayer requests, and prayer support
 - LiveKit-powered native study rooms with moderated guest video, persistent chat, and a
   synchronized Scripture workspace for host-led passages, highlights, translations, and AI insight
+- Consent-based host invitations, speaking queue, individual guest mute, and mute-all controls
 - Scheduled studies with local reminders and notification deep links
 - Moderator-ready row-level security policies
 - EAS development, preview, and production build profiles
@@ -112,7 +113,9 @@ supabase functions deploy livekit-token livekit-webhook delete-account
 
 Apply the live-study migrations through `009_live_bible_workspace.sql` before enabling the
 feature. Hosts can schedule, start, and end rooms; attendees can request a moderated place
-on the guest stage. Chat and shared Scripture state are stored in Supabase with row-level
+on the guest stage, or accept a direct host invitation. Hosts can mute one guest or the
+entire guest stage; guests always reactivate their own microphone after a host mute. Chat
+and shared Scripture state are stored in Supabase with row-level
 security. The live Scripture workspace synchronizes the host's passage, translation,
 focused verse, and AI-assisted insight without storing licensed Bible text. Reminder
 notifications are scheduled locally on each attendee's device. In LiveKit Cloud, configure

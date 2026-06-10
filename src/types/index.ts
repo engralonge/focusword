@@ -38,6 +38,7 @@ export type LiveMessage = {
 
 export type LiveStageStatus =
   | 'pending'
+  | 'invited'
   | 'approved'
   | 'declined'
   | 'removed'
@@ -52,6 +53,14 @@ export type LiveStageRequest = {
   isCurrentUser: boolean;
   createdAt: string;
   updatedAt: string;
+};
+
+export type LiveRoomParticipant = {
+  userId: string;
+  displayName: string;
+  isMicrophoneEnabled: boolean;
+  isCameraEnabled: boolean;
+  isSpeaking: boolean;
 };
 
 export type LiveBibleWorkspace = {

@@ -81,8 +81,9 @@ On physical iOS and Android devices, verify:
 - Bible browsing, provider copyright, search, notes, highlights, bookmarks, and summaries;
 - community posts, comments, reactions, prayers, and moderation policies;
 - host and attendee LiveKit connections, moderated guest camera/microphone permissions,
-  synchronized live Scripture, translation changes, verse focus, shared AI insight, chat,
-  reminders, deep links, participant counts, and room completion;
+  consent-based host invitations, speaking queue, individual and mute-all controls,
+  synchronized live Scripture, translation changes, verse focus, shared AI insight,
+  chat, reminders, deep links, participant counts, and room completion;
 - dark/light themes, offline fallback passages, screen-reader labels, and small screens.
 
 Local Android compilation additionally requires a JDK and Android SDK. When those are not
