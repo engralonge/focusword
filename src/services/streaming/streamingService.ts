@@ -283,6 +283,7 @@ export async function performLiveStageAction(
     | 'decline'
     | 'remove'
     | 'mute'
+    | 'camera_off'
     | 'mute_all',
   targetUserId?: string,
 ): Promise<void> {
@@ -404,7 +405,7 @@ export async function fetchLiveMessages(streamId: string): Promise<LiveMessage[]
   const { supabase, user } = await requireUser();
   const { data, error } = await supabase
     .from('live_messages')
-    .select('id, stream_id, user_id, body, created_at')
+    .select('id, stream_id, user_id, author_name, body, created_at')
     .eq('stream_id', streamId)
     .eq('status', 'published')
     .order('created_at', { ascending: true })
@@ -412,13 +413,11 @@ export async function fetchLiveMessages(streamId: string): Promise<LiveMessage[]
   if (error) {
     throw new Error(error.message);
   }
-  const rows = data ?? [];
-  const names = await profileNames(supabase, rows.map((row) => row.user_id));
-  return rows.map((row) => ({
+  return (data ?? []).map((row) => ({
     id: row.id,
     streamId: row.stream_id,
     userId: row.user_id,
-    authorName: names.get(row.user_id) ?? 'Member',
+    authorName: row.author_name?.trim() || 'Member',
     body: row.body,
     isOwner: row.user_id === user.id,
     createdAt: row.created_at,

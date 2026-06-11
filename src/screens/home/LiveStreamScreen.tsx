@@ -68,9 +68,12 @@ export function LiveStreamScreen() {
 
   const loadStage = useCallback(async () => {
     try {
-      setStageRequests(await fetchLiveStageRequests(params.streamId));
+      const nextRequests = await fetchLiveStageRequests(params.streamId);
+      setStageRequests(nextRequests);
+      return nextRequests;
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : 'Could not load the live stage.');
+      return undefined;
     }
   }, [params.streamId]);
 
@@ -129,6 +132,27 @@ export function LiveStreamScreen() {
     [loadStage, params.streamId, refreshCredentials, stream?.isHost, stream?.status],
   );
 
+  useEffect(() => {
+    if (stream?.isHost || stream?.status !== 'live' || credentials?.canPublish) {
+      return undefined;
+    }
+    const interval = setInterval(() => {
+      void loadStage().then((requests) => {
+        const ownRequest = requests?.find((request) => request.isCurrentUser);
+        if (ownRequest?.status === 'approved') {
+          void refreshCredentials();
+        }
+      });
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [
+    credentials?.canPublish,
+    loadStage,
+    refreshCredentials,
+    stream?.isHost,
+    stream?.status,
+  ]);
+
   const changeStage = async (
     action:
       | 'request'
@@ -140,6 +164,7 @@ export function LiveStreamScreen() {
       | 'decline'
       | 'remove'
       | 'mute'
+      | 'camera_off'
       | 'mute_all',
     targetUserId?: string,
   ) => {
@@ -463,6 +488,23 @@ export function LiveStreamScreen() {
                           size={20}
                           color={
                             participant?.isMicrophoneEnabled
+                              ? palette.brandLight
+                              : palette.muted
+                          }
+                        />
+                      </Pressable>
+                      <Pressable
+                        className="w-10 h-10 rounded-full bg-brand/10 items-center justify-center"
+                        accessibilityRole="button"
+                        accessibilityLabel={`Turn off ${request.displayName}'s camera`}
+                        disabled={working || !participant?.isCameraEnabled}
+                        onPress={() => void changeStage('camera_off', request.userId)}
+                      >
+                        <Ionicons
+                          name={participant?.isCameraEnabled ? 'videocam' : 'videocam-off'}
+                          size={20}
+                          color={
+                            participant?.isCameraEnabled
                               ? palette.brandLight
                               : palette.muted
                           }

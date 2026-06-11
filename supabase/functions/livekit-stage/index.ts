@@ -19,6 +19,7 @@ type StageAction =
   | 'decline'
   | 'remove'
   | 'mute'
+  | 'camera_off'
   | 'mute_all';
 
 function json(body: unknown, status = 200): Response {
@@ -39,8 +40,55 @@ function isStageAction(value: unknown): value is StageAction {
     'decline',
     'remove',
     'mute',
+    'camera_off',
     'mute_all',
   ].includes(String(value));
+}
+
+async function resolveDisplayName(
+  admin: ReturnType<typeof createClient>,
+  userId: string,
+): Promise<string> {
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('display_name')
+    .eq('id', userId)
+    .maybeSingle();
+  if (profile?.display_name?.trim()) {
+    return profile.display_name.trim().slice(0, 80);
+  }
+
+  const { data } = await admin.auth.admin.getUserById(userId);
+  const metadataName =
+    data.user?.user_metadata?.display_name ??
+    data.user?.user_metadata?.full_name ??
+    data.user?.user_metadata?.name;
+  return String(metadataName || data.user?.email?.split('@')[0] || 'Member')
+    .trim()
+    .slice(0, 80);
+}
+
+async function updatePublishPermission(
+  roomService: RoomServiceClient,
+  roomName: string,
+  userId: string,
+  canPublish: boolean,
+): Promise<boolean> {
+  try {
+    await roomService.updateParticipant(roomName, userId, {
+      permission: {
+        canSubscribe: true,
+        canPublish,
+        canPublishData: true,
+        canUpdateOwnMetadata: true,
+      },
+    });
+    return true;
+  } catch (error) {
+    // The database status and next room token remain authoritative if disconnected.
+    console.warn('Could not update the connected LiveKit participant', error);
+    return false;
+  }
 }
 
 Deno.serve(async (request) => {
@@ -168,13 +216,7 @@ Deno.serve(async (request) => {
       }
     }
 
-    const { data: profile } = await admin
-      .from('profiles')
-      .select('display_name')
-      .eq('id', userId)
-      .maybeSingle();
-    const displayName =
-      profile?.display_name?.trim() || userData.user.email?.split('@')[0] || 'Member';
+    const displayName = await resolveDisplayName(admin, userId);
     const status =
       action === 'request'
         ? 'pending'
@@ -196,18 +238,13 @@ Deno.serve(async (request) => {
       return json({ error: error.message }, 500);
     }
     if (action === 'accept_invite') {
-      try {
-        await roomService.updateParticipant(stream.room_name, userId, {
-          permission: {
-            canSubscribe: true,
-            canPublish: true,
-            canPublishData: true,
-            canUpdateOwnMetadata: true,
-          },
-        });
-      } catch (error) {
-        console.warn('Could not promote the connected invited participant', error);
-      }
+      const participantUpdated = await updatePublishPermission(
+        roomService,
+        stream.room_name,
+        userId,
+        true,
+      );
+      return json({ status, participantUpdated });
     }
     return json({ status });
   }
@@ -255,16 +292,12 @@ Deno.serve(async (request) => {
     } catch {
       return json({ error: 'This audience member is no longer connected' }, 409);
     }
-    const { data: profile } = await admin
-      .from('profiles')
-      .select('display_name')
-      .eq('id', targetUserId)
-      .maybeSingle();
+    const displayName = await resolveDisplayName(admin, targetUserId);
     const { error } = await admin.from('live_stage_requests').upsert(
       {
         stream_id: streamId,
         user_id: targetUserId,
-        display_name: (profile?.display_name?.trim() || 'Community member').slice(0, 80),
+        display_name: displayName,
         status: 'invited',
       },
       { onConflict: 'stream_id,user_id' },
@@ -285,28 +318,31 @@ Deno.serve(async (request) => {
     return json({ error: 'Stage request not found' }, 404);
   }
 
-  if (action === 'mute') {
+  if (action === 'mute' || action === 'camera_off') {
     try {
       const participant = await roomService.getParticipant(
         stream.room_name,
         targetUserId,
       );
-      const microphoneTrack = participant.tracks.find(
-        (track) => track.source === TrackSource.MICROPHONE,
+      const source =
+        action === 'mute' ? TrackSource.MICROPHONE : TrackSource.CAMERA;
+      const track = participant.tracks.find(
+        (item) => item.source === source,
       );
-      if (!microphoneTrack || microphoneTrack.muted) {
+      if (!track || track.muted) {
         return json({ mutedCount: 0 });
       }
       await roomService.mutePublishedTrack(
         stream.room_name,
         targetUserId,
-        microphoneTrack.sid,
+        track.sid,
         true,
       );
       return json({ mutedCount: 1 });
     } catch (error) {
-      console.error('Could not mute participant', error);
-      return json({ error: 'Could not mute this participant' }, 502);
+      const device = action === 'mute' ? 'microphone' : 'camera';
+      console.error(`Could not turn off participant ${device}`, error);
+      return json({ error: `Could not turn off this participant's ${device}` }, 502);
     }
   }
 
@@ -335,19 +371,12 @@ Deno.serve(async (request) => {
     return json({ error: updateError.message }, 500);
   }
 
-  try {
-    await roomService.updateParticipant(stream.room_name, targetUserId, {
-      permission: {
-        canSubscribe: true,
-        canPublish: action === 'approve',
-        canPublishData: true,
-        canUpdateOwnMetadata: true,
-      },
-    });
-  } catch (error) {
-    // The request state and next room token remain authoritative if the user disconnected.
-    console.warn('Could not update the connected LiveKit participant', error);
-  }
+  const participantUpdated = await updatePublishPermission(
+    roomService,
+    stream.room_name,
+    targetUserId,
+    action === 'approve',
+  );
 
-  return json({ status: nextStatus });
+  return json({ status: nextStatus, participantUpdated });
 });
