@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import {
+  Alert,
+  Linking,
+  PermissionsAndroid,
+  Platform,
+  Pressable,
+  View,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import {
   AudioSession,
@@ -9,10 +16,17 @@ import {
   useRoomContext,
   useTracks,
 } from '@livekit/react-native';
+import { permissions } from '@livekit/react-native-webrtc';
 import { Track } from 'livekit-client';
 import { Text } from '@/components/ui/Text';
 import { palette } from '@/constants/colors';
 import type { LiveRoomParticipant } from '@/types';
+
+type MediaPermission = 'camera' | 'microphone';
+type MediaPermissionState = {
+  camera: boolean;
+  microphone: boolean;
+};
 
 type Props = {
   serverUrl: string;
@@ -26,10 +40,56 @@ type Props = {
   onError: (message: string) => void;
 };
 
+const permissionLabels: Record<MediaPermission, string> = {
+  camera: 'Camera',
+  microphone: 'Microphone',
+};
+
+async function requestMediaPermission(kind: MediaPermission) {
+  if (Platform.OS === 'android') {
+    const permission =
+      kind === 'camera'
+        ? PermissionsAndroid.PERMISSIONS.CAMERA
+        : PermissionsAndroid.PERMISSIONS.RECORD_AUDIO;
+
+    if (await PermissionsAndroid.check(permission)) {
+      return true;
+    }
+
+    const result = await PermissionsAndroid.request(permission, {
+      title: `${permissionLabels[kind]} access`,
+      message: `Citizens Bible Community needs ${kind} access when you join the live stage.`,
+      buttonPositive: 'Continue',
+      buttonNegative: 'Not now',
+    });
+
+    if (result === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
+      Alert.alert(
+        `${permissionLabels[kind]} access is blocked`,
+        `Open Android settings and allow ${kind} access for Citizens Bible Community.`,
+        [
+          { text: 'Not now', style: 'cancel' },
+          {
+            text: 'Open settings',
+            onPress: () => {
+              void Linking.openSettings();
+            },
+          },
+        ],
+      );
+    }
+
+    return result === PermissionsAndroid.RESULTS.GRANTED;
+  }
+
+  return Boolean(await permissions.request({ name: kind }));
+}
+
 function RoomContent({
   isHost,
   canPublish,
   compact,
+  initialPermissions,
   onParticipantCount,
   onParticipantsChange,
   onLeave,
@@ -43,12 +103,18 @@ function RoomContent({
   | 'onParticipantsChange'
   | 'onLeave'
   | 'onError'
->) {
+> & {
+  initialPermissions: MediaPermissionState;
+}) {
   const room = useRoomContext();
   const participants = useParticipants();
   const cameraTracks = useTracks([Track.Source.Camera]);
-  const [cameraEnabled, setCameraEnabled] = useState(isHost);
-  const [microphoneEnabled, setMicrophoneEnabled] = useState(isHost);
+  const [cameraEnabled, setCameraEnabled] = useState(
+    isHost && initialPermissions.camera,
+  );
+  const [microphoneEnabled, setMicrophoneEnabled] = useState(
+    isHost && initialPermissions.microphone,
+  );
 
   useEffect(() => {
     onParticipantCount(participants.length);
@@ -83,20 +149,38 @@ function RoomContent({
   const toggleCamera = async () => {
     try {
       const next = !cameraEnabled;
+      if (next && !(await requestMediaPermission('camera'))) {
+        onError('Camera permission was denied. Allow camera access to turn on video.');
+        return;
+      }
       await room.localParticipant.setCameraEnabled(next);
-      setCameraEnabled(next);
+      setCameraEnabled(room.localParticipant.isCameraEnabled);
     } catch (error) {
-      onError(error instanceof Error ? error.message : 'Could not change the camera.');
+      onError(
+        error instanceof Error && error.message
+          ? `Could not turn on the camera: ${error.message}`
+          : 'Could not turn on the camera. Check Android camera access and try again.',
+      );
     }
   };
 
   const toggleMicrophone = async () => {
     try {
       const next = !microphoneEnabled;
+      if (next && !(await requestMediaPermission('microphone'))) {
+        onError(
+          'Microphone permission was denied. Allow microphone access to unmute.',
+        );
+        return;
+      }
       await room.localParticipant.setMicrophoneEnabled(next);
-      setMicrophoneEnabled(next);
+      setMicrophoneEnabled(room.localParticipant.isMicrophoneEnabled);
     } catch (error) {
-      onError(error instanceof Error ? error.message : 'Could not change the microphone.');
+      onError(
+        error instanceof Error && error.message
+          ? `Could not unmute the microphone: ${error.message}`
+          : 'Could not unmute the microphone. Check Android microphone access and try again.',
+      );
     }
   };
 
@@ -208,6 +292,15 @@ function RoomContent({
 }
 
 export function LiveRoomView(props: Props) {
+  const [initialPermissions, setInitialPermissions] =
+    useState<MediaPermissionState>({
+      camera: false,
+      microphone: false,
+    });
+  const [permissionsReady, setPermissionsReady] = useState(
+    !props.isHost || !props.canPublish,
+  );
+
   useEffect(() => {
     void AudioSession.startAudioSession();
     return () => {
@@ -215,20 +308,75 @@ export function LiveRoomView(props: Props) {
     };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+
+    const prepareHostMedia = async () => {
+      if (!props.isHost || !props.canPublish) {
+        if (active) {
+          setInitialPermissions({ camera: false, microphone: false });
+          setPermissionsReady(true);
+        }
+        return;
+      }
+
+      setPermissionsReady(false);
+      const microphone = await requestMediaPermission('microphone');
+      const camera = await requestMediaPermission('camera');
+
+      if (!active) return;
+      setInitialPermissions({ camera, microphone });
+      setPermissionsReady(true);
+
+      if (!microphone || !camera) {
+        const denied = [
+          !microphone ? 'microphone' : null,
+          !camera ? 'camera' : null,
+        ].filter(Boolean);
+        props.onError(
+          `${denied.join(' and ')} permission denied. You can listen now and enable access from the controls.`,
+        );
+      }
+    };
+
+    void prepareHostMedia();
+    return () => {
+      active = false;
+    };
+  }, [props.canPublish, props.isHost, props.onError]);
+
+  if (!permissionsReady) {
+    return (
+      <View className="aspect-video bg-black rounded-lg items-center justify-center px-6">
+        <Ionicons name="shield-checkmark-outline" size={32} color={palette.brandMuted} />
+        <Text variant="caption" className="text-center mt-3">
+          Preparing camera and microphone access...
+        </Text>
+      </View>
+    );
+  }
+
   return (
     <LiveKitRoom
       serverUrl={props.serverUrl}
       token={props.token}
       connect
-      audio={props.isHost}
-      video={props.isHost}
+      audio={props.isHost && initialPermissions.microphone}
+      video={props.isHost && initialPermissions.camera}
       onError={(error) => props.onError(error.message)}
-      onMediaDeviceFailure={() => props.onError('Camera or microphone access failed.')}
+      onMediaDeviceFailure={(failure) =>
+        props.onError(
+          failure
+            ? `A media device failed: ${failure}. Check Android camera and microphone access.`
+            : 'Camera or microphone access failed. Check Android app permissions.',
+        )
+      }
     >
       <RoomContent
         isHost={props.isHost}
         canPublish={props.canPublish}
         compact={props.compact}
+        initialPermissions={initialPermissions}
         onParticipantCount={props.onParticipantCount}
         onParticipantsChange={props.onParticipantsChange}
         onLeave={props.onLeave}
