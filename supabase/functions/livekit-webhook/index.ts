@@ -28,7 +28,8 @@ Deno.serve(async (request) => {
     return response('Invalid webhook signature', 401);
   }
 
-  const roomName = event.room?.name;
+  const egressInfo = 'egressInfo' in event ? event.egressInfo : undefined;
+  const roomName = event.room?.name ?? egressInfo?.roomName;
   if (!roomName) {
     return response('ok');
   }
@@ -40,6 +41,9 @@ Deno.serve(async (request) => {
       'participant_joined',
       'participant_left',
       'participant_connection_aborted',
+      'egress_started',
+      'egress_updated',
+      'egress_ended',
     ].includes(event.event)
   ) {
     return response('ok');
@@ -52,6 +56,28 @@ Deno.serve(async (request) => {
   const supabase = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false },
   });
+
+  if (event.event.startsWith('egress_') && egressInfo?.egressId) {
+    const status =
+      event.event === 'egress_ended'
+        ? egressInfo.error
+          ? 'failed'
+          : 'ready'
+        : event.event === 'egress_started'
+          ? 'recording'
+          : 'processing';
+    const update: Record<string, unknown> = {
+      status,
+      error_message: egressInfo.error || null,
+    };
+    if (status === 'ready') update.ready_at = new Date().toISOString();
+    const { error: recordingError } = await supabase
+      .from('live_recordings')
+      .update(update)
+      .eq('egress_id', egressInfo.egressId);
+    return recordingError ? response('Recording update failed', 500) : response('ok');
+  }
+
   const { data: stream, error: streamError } = await supabase
     .from('live_streams')
     .update({ viewer_count: viewerCount })

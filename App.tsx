@@ -56,12 +56,26 @@ const linking: LinkingOptions<RootStackParamList> = {
               LiveHome: 'live',
               CreateStream: 'live/new',
               LiveStream: 'live/:streamId',
+              Replay: 'replay/:recordingId',
             },
           },
           Bible: 'bible',
           Prayer: 'prayer',
-          Community: 'community',
-          Profile: 'profile',
+          Community: {
+            screens: {
+              CommunityMain: 'community',
+              ActivityInbox: 'activity',
+              CommunityPost: 'community/discussion',
+            },
+          },
+          Profile: {
+            screens: {
+              ProfileMain: 'profile',
+              CommunityPoints: 'profile/points',
+              EditProfile: 'profile/edit',
+              Settings: 'profile/settings',
+            },
+          },
         },
       },
       Auth: {

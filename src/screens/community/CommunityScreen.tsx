@@ -19,6 +19,8 @@ import {
   updateCommunityPost,
 } from '@/services/community/communityService';
 import { palette } from '@/constants/colors';
+import { fetchUnreadActivityCount } from '@/services/activity/activityService';
+import { Avatar } from '@/components/common/Avatar';
 
 type Nav = NativeStackNavigationProp<CommunityStackParamList, 'CommunityMain'>;
 
@@ -31,12 +33,18 @@ export function CommunityScreen() {
   const [editingPost, setEditingPost] = useState<CommunityPost | null>(null);
   const [draft, setDraft] = useState('');
   const [saving, setSaving] = useState(false);
+  const [unreadActivity, setUnreadActivity] = useState(0);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      setPosts(await fetchCommunityPosts());
+      const [nextPosts, nextUnread] = await Promise.all([
+        fetchCommunityPosts(),
+        fetchUnreadActivityCount(),
+      ]);
+      setPosts(nextPosts);
+      setUnreadActivity(nextUnread);
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : 'Could not load the community.');
     } finally {
@@ -118,7 +126,29 @@ export function CommunityScreen() {
   return (
     <>
       <ScreenContainer contentClassName="px-5">
-        <Header title="Community" subtitle="Encourage, testify, and walk together in faith" />
+        <Header title="Activity center" subtitle="Stay connected to community life" />
+        <Pressable
+          className="mb-5 flex-row items-center rounded-2xl border border-brand/25 bg-brand/[0.06] px-4 py-4"
+          accessibilityRole="button"
+          onPress={() => navigation.navigate('ActivityInbox')}
+        >
+          <View className="w-11 h-11 rounded-xl bg-brand/12 items-center justify-center">
+            <Ionicons name="notifications-outline" size={22} color={palette.brandLight} />
+          </View>
+          <View className="ml-3 flex-1">
+            <Text className="font-semibold">Your activity</Text>
+            <Text variant="caption" className="mt-1">
+              Replies, invitations, prayer, and points
+            </Text>
+          </View>
+          {unreadActivity ? (
+            <View className="min-w-7 h-7 rounded-full bg-live px-2 items-center justify-center">
+              <Text className="text-xs font-semibold text-white">{unreadActivity}</Text>
+            </View>
+          ) : (
+            <Ionicons name="chevron-forward" size={18} color={palette.muted} />
+          )}
+        </Pressable>
         <Card className="mb-6 rounded-3xl border-brand/20 bg-brand/[0.05] p-5">
           <View className="flex-row items-center gap-3">
             <View className="w-11 h-11 rounded-xl bg-brand/12 items-center justify-center">
@@ -144,7 +174,14 @@ export function CommunityScreen() {
         {posts.map((post) => (
           <Card key={post.id} className="mb-3 border-brand/15 bg-surface-elevated/80 p-5">
             <View className="flex-row items-center justify-between">
-              <Text variant="subtitle">{post.authorName}</Text>
+              <View className="flex-row items-center gap-3">
+                <Avatar
+                  displayName={post.authorName}
+                  avatarUrl={post.authorAvatarUrl}
+                  size="sm"
+                />
+                <Text variant="subtitle">{post.authorName}</Text>
+              </View>
               {post.isOwner ? (
                 <View className="flex-row">
                   <Pressable

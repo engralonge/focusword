@@ -55,7 +55,16 @@
         }
       ],
       "@react-native-community/datetimepicker",
-      "expo-font"
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Citizens Bible Community uses your selected photo as your profile picture.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
+      "expo-font",
+      "expo-video"
     ],
     "extra": {
       "eas": {

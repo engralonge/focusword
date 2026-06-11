@@ -40,6 +40,26 @@ export type CommunityPointOverview = {
   recentActivity: CommunityPointEvent[];
 };
 
+export type ActivityEventKind =
+  | 'comment'
+  | 'reaction'
+  | 'prayer_support'
+  | 'stage_invitation'
+  | 'stage_update'
+  | 'points';
+
+export type ActivityEvent = {
+  id: string;
+  kind: ActivityEventKind;
+  title: string;
+  body?: string;
+  url?: string;
+  actorName?: string;
+  actorAvatarUrl?: string;
+  read: boolean;
+  createdAt: string;
+};
+
 export type UserProfile = {
   id: string;
   displayName: string;
@@ -64,6 +84,18 @@ export type LiveStream = {
   updatedAt: string;
   isHost: boolean;
   reminderSet: boolean;
+  recordingRequested: boolean;
+  recordingStatus?: 'pending' | 'recording' | 'processing' | 'ready' | 'failed';
+};
+
+export type LiveRecording = {
+  id: string;
+  streamId: string;
+  title: string;
+  hostName: string;
+  playbackUrl: string;
+  durationSeconds?: number;
+  readyAt: string;
 };
 
 export type LiveMessage = {
@@ -127,6 +159,7 @@ export type PrayerRequest = {
   id: string;
   userId: string;
   authorName: string;
+  authorAvatarUrl?: string;
   content: string;
   isAnonymous: boolean;
   status: 'published' | 'answered';
@@ -151,6 +184,7 @@ export type CommunityPost = {
   id: string;
   userId: string;
   authorName: string;
+  authorAvatarUrl?: string;
   body: string;
   reactionCount: number;
   reactedByMe: boolean;
@@ -165,6 +199,7 @@ export type CommunityComment = {
   postId: string;
   userId: string;
   authorName: string;
+  authorAvatarUrl?: string;
   body: string;
   isOwner: boolean;
   createdAt: string;

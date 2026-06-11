@@ -9,8 +9,10 @@ type Props = {
   token: string;
   isHost: boolean;
   canPublish: boolean;
+  compact?: boolean;
   onParticipantCount: (count: number) => void;
   onParticipantsChange: (participants: LiveRoomParticipant[]) => void;
+  onLeave: () => void;
   onError: (message: string) => void;
 };
 

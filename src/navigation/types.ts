@@ -9,6 +9,7 @@ export type LiveStackParamList = {
   LiveHome: undefined;
   CreateStream: undefined;
   LiveStream: { streamId: string };
+  Replay: { recordingId: string };
 };
 
 import type { BibleTranslation } from '@/types/bible';
@@ -32,6 +33,7 @@ export type PrayerStackParamList = {
 
 export type CommunityStackParamList = {
   CommunityMain: undefined;
+  ActivityInbox: undefined;
   CommunityPost: { post: CommunityPost };
 };
 

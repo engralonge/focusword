@@ -2,6 +2,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { CommunityStackParamList } from '@/navigation/types';
 import { CommunityScreen } from '@/screens/community/CommunityScreen';
 import { CommunityPostScreen } from '@/screens/community/CommunityPostScreen';
+import { ActivityInboxScreen } from '@/screens/community/ActivityInboxScreen';
 import { useTheme } from '@/context/ThemeProvider';
 import { palette } from '@/constants/colors';
 
@@ -17,6 +18,7 @@ export function CommunityStack() {
       }}
     >
       <Stack.Screen name="CommunityMain" component={CommunityScreen} />
+      <Stack.Screen name="ActivityInbox" component={ActivityInboxScreen} />
       <Stack.Screen
         name="CommunityPost"
         component={CommunityPostScreen}

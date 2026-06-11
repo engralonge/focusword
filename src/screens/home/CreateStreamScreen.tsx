@@ -27,6 +27,7 @@ export function CreateStreamScreen() {
   const [startNow, setStartNow] = useState(true);
   const [scheduledAt, setScheduledAt] = useState(() => new Date(Date.now() + 60 * 60 * 1000));
   const [pickerMode, setPickerMode] = useState<'date' | 'time' | null>(null);
+  const [recordingRequested, setRecordingRequested] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,6 +52,7 @@ export function CreateStreamScreen() {
         description,
         startNow,
         scheduledAt: startNow ? undefined : scheduledAt.toISOString(),
+        recordingRequested,
       });
       navigation.replace('LiveStream', { streamId });
     } catch (nextError) {
@@ -135,6 +137,27 @@ export function CreateStreamScreen() {
             />
           ) : null}
         </View>
+      ) : null}
+      <View className="mt-6 flex-row items-center justify-between rounded-2xl border border-border bg-surface-elevated px-4 py-4">
+        <View className="flex-1 pr-4">
+          <Text variant="subtitle">Save a replay</Text>
+          <Text variant="caption" className="mt-1 leading-5">
+            Record this study for later viewing. Tell guests before they join.
+          </Text>
+        </View>
+        <Switch
+          value={recordingRequested}
+          onValueChange={setRecordingRequested}
+          trackColor={{ false: palette.muted, true: palette.brandDark }}
+          thumbColor={recordingRequested ? palette.brand : undefined}
+          accessibilityLabel="Save a replay of this study"
+        />
+      </View>
+      {recordingRequested ? (
+        <Text variant="caption" className="mt-2 leading-5">
+          By continuing, you confirm that participants will be informed that the session is
+          being recorded.
+        </Text>
       ) : null}
       {error ? <Text className="text-red-500 text-center mt-5">{error}</Text> : null}
       <Button

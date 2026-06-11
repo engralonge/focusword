@@ -10,8 +10,11 @@ import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/common/EmptyState';
 import { LiveStreamCard } from '@/components/live/LiveStreamCard';
 import type { LiveStackParamList } from '@/navigation/types';
-import type { LiveStream } from '@/types';
-import { fetchLiveStreams } from '@/services/streaming/streamingService';
+import type { LiveRecording, LiveStream } from '@/types';
+import {
+  fetchLiveStreams,
+  fetchReadyRecordings,
+} from '@/services/streaming/streamingService';
 import { palette } from '@/constants/colors';
 import { groupLiveStreams } from '@/utils/live';
 
@@ -20,6 +23,7 @@ type Nav = NativeStackNavigationProp<LiveStackParamList, 'LiveHome'>;
 export function LiveHomeScreen() {
   const navigation = useNavigation<Nav>();
   const [streams, setStreams] = useState<LiveStream[]>([]);
+  const [recordings, setRecordings] = useState<LiveRecording[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,7 +31,12 @@ export function LiveHomeScreen() {
     setLoading(true);
     setError(null);
     try {
-      setStreams(await fetchLiveStreams());
+      const [nextStreams, nextRecordings] = await Promise.all([
+        fetchLiveStreams(),
+        fetchReadyRecordings(),
+      ]);
+      setStreams(nextStreams);
+      setRecordings(nextRecordings);
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : 'Could not load live studies.');
     } finally {
@@ -91,6 +100,32 @@ export function LiveHomeScreen() {
             <Text variant="label" className="mt-6 mb-3">Recent gatherings</Text>
             {recent.map((stream) => (
               <LiveStreamCard key={stream.id} stream={stream} onPress={() => openStream(stream)} />
+            ))}
+          </>
+        ) : null}
+        {recordings.length ? (
+          <>
+            <Text variant="label" className="mt-6 mb-3">Study replays</Text>
+            {recordings.map((recording) => (
+              <Pressable
+                key={recording.id}
+                className="mb-3 rounded-2xl border border-brand/20 bg-brand/[0.04] px-4 py-4"
+                accessibilityRole="button"
+                onPress={() => navigation.navigate('Replay', { recordingId: recording.id })}
+              >
+                <View className="flex-row items-center">
+                  <View className="w-11 h-11 rounded-xl bg-brand/12 items-center justify-center">
+                    <Ionicons name="play" size={20} color={palette.brandLight} />
+                  </View>
+                  <View className="ml-3 flex-1">
+                    <Text variant="subtitle">{recording.title}</Text>
+                    <Text variant="caption" className="mt-1">
+                      Hosted by {recording.hostName}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={palette.muted} />
+                </View>
+              </Pressable>
             ))}
           </>
         ) : null}

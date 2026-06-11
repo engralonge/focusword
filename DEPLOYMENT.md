@@ -85,6 +85,10 @@ On physical iOS and Android devices, verify:
   and Android/iOS system-settings links;
 - community point awards, daily caps, streak calculations, immutable ledger behavior,
   and clear non-monetary/non-transferable disclosures;
+- persistent session restoration, Activity Center events, avatar upload and replacement,
+  pinned live video, participant leave controls, and multi-camera rendering;
+- opt-in replay consent, LiveKit Egress start/stop behavior, recording completion webhooks,
+  and playback availability when S3-compatible recording storage is configured;
 - host and attendee LiveKit connections, moderated guest camera/microphone permissions,
   consent-based host invitations, speaking queue, individual and mute-all controls,
   synchronized live Scripture, translation changes, verse focus, shared AI insight,

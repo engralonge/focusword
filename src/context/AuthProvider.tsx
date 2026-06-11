@@ -20,6 +20,7 @@ import {
   signOut as authSignOut,
   deleteAccount as deleteUserAccount,
   updatePassword,
+  updateUserAvatar,
   updateUserProfile,
 } from '@/services/auth/authService';
 
@@ -32,6 +33,7 @@ type AuthContextValue = {
   resetPassword: (email: string) => Promise<string | null>;
   setNewPassword: (password: string) => Promise<string | null>;
   updateProfile: (displayName: string, bio: string) => Promise<string | null>;
+  updateAvatar: (uri: string | null, mimeType?: string) => Promise<string | null>;
   signOut: () => Promise<void>;
   deleteAccount: () => Promise<string | null>;
 };
@@ -56,24 +58,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await handleAuthCallback(url);
     };
 
-    Promise.all([getCurrentSession(), Linking.getInitialURL()]).then(async ([current, initialUrl]) => {
-      if (!mounted) {
-        return;
-      }
-      if (current) {
-        const profile = await fetchUserProfile();
-        setSession(profile ? { ...current, user: profile } : current);
-      } else {
-        setSession(null);
-      }
-      void openUrl(initialUrl).finally(() => setLoading(false));
-    });
+    void Promise.all([getCurrentSession(), Linking.getInitialURL()])
+      .then(async ([current, initialUrl]) => {
+        if (!mounted) return;
+        if (current) {
+          const profile = await fetchUserProfile();
+          if (mounted) {
+            setSession(profile ? { ...current, user: profile } : current);
+          }
+        } else {
+          setSession(null);
+        }
+        await openUrl(initialUrl);
+      })
+      .catch(() => {
+        if (mounted) setSession(null);
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
 
     const linkSubscription = Linking.addEventListener('url', ({ url }) => {
       void openUrl(url);
     });
     const unsubscribe = onAuthStateChange((nextSession, event) => {
-      setSession(nextSession);
+      setSession((current) =>
+        nextSession && current
+          ? {
+              ...nextSession,
+              user: {
+                ...current.user,
+                ...nextSession.user,
+                bio: current.user.bio,
+              },
+            }
+          : nextSession,
+      );
       if (event === 'PASSWORD_RECOVERY') {
         setIsPasswordRecovery(true);
       }
@@ -127,6 +147,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return null;
   }, []);
 
+  const updateAvatar = useCallback(async (uri: string | null, mimeType?: string) => {
+    const { user, error } = await updateUserAvatar(uri, mimeType);
+    if (error || !user) {
+      return error ?? 'Could not update your profile photo.';
+    }
+    setSession((current) => current ? { ...current, user } : current);
+    return null;
+  }, []);
+
   const signOut = useCallback(async () => {
     await authSignOut();
     setSession(null);
@@ -152,6 +181,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       resetPassword,
       setNewPassword,
       updateProfile,
+      updateAvatar,
       signOut,
       deleteAccount,
     }),
@@ -164,6 +194,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       resetPassword,
       setNewPassword,
       updateProfile,
+      updateAvatar,
       signOut,
       deleteAccount,
     ],

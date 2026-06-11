@@ -19,20 +19,30 @@ type Props = {
   token: string;
   isHost: boolean;
   canPublish: boolean;
+  compact?: boolean;
   onParticipantCount: (count: number) => void;
   onParticipantsChange: (participants: LiveRoomParticipant[]) => void;
+  onLeave: () => void;
   onError: (message: string) => void;
 };
 
 function RoomContent({
   isHost,
   canPublish,
+  compact,
   onParticipantCount,
   onParticipantsChange,
+  onLeave,
   onError,
 }: Pick<
   Props,
-  'isHost' | 'canPublish' | 'onParticipantCount' | 'onParticipantsChange' | 'onError'
+  | 'isHost'
+  | 'canPublish'
+  | 'compact'
+  | 'onParticipantCount'
+  | 'onParticipantsChange'
+  | 'onLeave'
+  | 'onError'
 >) {
   const room = useRoomContext();
   const participants = useParticipants();
@@ -90,13 +100,36 @@ function RoomContent({
     }
   };
 
-  const visibleTracks = cameraTracks.slice(0, 4);
+  const leaveRoom = async () => {
+    try {
+      await room.localParticipant.setCameraEnabled(false);
+      await room.localParticipant.setMicrophoneEnabled(false);
+      await room.disconnect();
+      onLeave();
+    } catch (error) {
+      onError(error instanceof Error ? error.message : 'Could not leave the room.');
+    }
+  };
+
+  const visibleTracks = cameraTracks
+    .filter((track, index, tracks) =>
+      tracks.findIndex(
+        (item) =>
+          item.participant.identity === track.participant.identity &&
+          item.source === track.source,
+      ) === index,
+    )
+    .slice(0, 4);
   const isGrid = visibleTracks.length > 1;
 
   return (
     <View
       className={`bg-black rounded-lg overflow-hidden ${
-        isGrid ? 'h-[420px] flex-row flex-wrap' : 'aspect-video'
+        isGrid
+          ? `${compact ? 'h-[180px]' : 'h-[420px]'} flex-row flex-wrap`
+          : compact
+            ? 'h-[180px]'
+            : 'aspect-video'
       }`}
     >
       {visibleTracks.length ? (
@@ -151,8 +184,25 @@ function RoomContent({
               color="white"
             />
           </Pressable>
+          <Pressable
+            className="w-12 h-12 rounded-full bg-red-700 items-center justify-center"
+            onPress={() => void leaveRoom()}
+            accessibilityRole="button"
+            accessibilityLabel="Leave live study"
+          >
+            <Ionicons name="call" size={22} color="white" style={{ transform: [{ rotate: '135deg' }] }} />
+          </Pressable>
         </View>
-      ) : null}
+      ) : (
+        <Pressable
+          className="absolute bottom-3 self-center w-12 h-12 rounded-full bg-red-700 items-center justify-center"
+          onPress={() => void leaveRoom()}
+          accessibilityRole="button"
+          accessibilityLabel="Leave live study"
+        >
+          <Ionicons name="call" size={22} color="white" style={{ transform: [{ rotate: '135deg' }] }} />
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -178,8 +228,10 @@ export function LiveRoomView(props: Props) {
       <RoomContent
         isHost={props.isHost}
         canPublish={props.canPublish}
+        compact={props.compact}
         onParticipantCount={props.onParticipantCount}
         onParticipantsChange={props.onParticipantsChange}
+        onLeave={props.onLeave}
         onError={props.onError}
       />
     </LiveKitRoom>

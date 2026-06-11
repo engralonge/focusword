@@ -11,6 +11,7 @@ import { useAuth } from '@/context/AuthProvider';
 import type { ProfileStackParamList } from '@/navigation/types';
 import { config } from '@/constants/config';
 import { palette } from '@/constants/colors';
+import { Avatar } from '@/components/common/Avatar';
 
 type Nav = NativeStackNavigationProp<ProfileStackParamList, 'ProfileMain'>;
 
@@ -22,11 +23,12 @@ export function ProfileScreen() {
     <ScreenContainer contentClassName="px-5">
       <Header title="Profile" subtitle="Your journey in the Word" />
       <Card className="rounded-3xl border-brand/25 bg-brand/[0.05] p-6 items-center">
-        <View className="w-[88px] h-[88px] rounded-full bg-surface-elevated border-2 border-brand/35 items-center justify-center mb-5">
-          <Text variant="title" className="text-brand-light">
-            {(session?.user.displayName ?? 'G')[0]?.toUpperCase()}
-          </Text>
-        </View>
+        <Avatar
+          displayName={session?.user.displayName ?? 'Guest'}
+          avatarUrl={session?.user.avatarUrl}
+          size="lg"
+          className="mb-5 border-2"
+        />
         <Text variant="subtitle">
           {session?.user.displayName ?? 'Guest'}
         </Text>

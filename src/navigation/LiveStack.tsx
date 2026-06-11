@@ -3,6 +3,7 @@ import type { LiveStackParamList } from '@/navigation/types';
 import { LiveHomeScreen } from '@/screens/home/LiveHomeScreen';
 import { CreateStreamScreen } from '@/screens/home/CreateStreamScreen';
 import { LiveStreamScreen } from '@/screens/home/LiveStreamScreen';
+import { ReplayScreen } from '@/screens/home/ReplayScreen';
 import { palette } from '@/constants/colors';
 
 const Stack = createNativeStackNavigator<LiveStackParamList>();
@@ -20,6 +21,7 @@ export function LiveStack() {
       <Stack.Screen name="LiveHome" component={LiveHomeScreen} options={{ headerShown: false }} />
       <Stack.Screen name="CreateStream" component={CreateStreamScreen} options={{ title: 'Host a study' }} />
       <Stack.Screen name="LiveStream" component={LiveStreamScreen} options={{ title: 'Live study' }} />
+      <Stack.Screen name="Replay" component={ReplayScreen} options={{ title: 'Study replay' }} />
     </Stack.Navigator>
   );
 }

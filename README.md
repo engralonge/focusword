@@ -15,6 +15,11 @@ Bible study live streaming app built with **React Native**, **Expo**, **NativeWi
   and transparent links to device quiet controls
 - Non-transferable community points for verified study, prayer, community, and live
   participation, with streaks, an append-only ledger, and daily anti-abuse caps
+- Persistent sign-in with foreground token refresh and migration from legacy secure storage
+- Activity Center inbox for replies, prayer support, live-stage invitations, and points
+- Profile photo upload and display across profiles, discussions, and prayer requests
+- Muted live previews, community highlights, pinned in-room video, and explicit leave controls
+- Consent-based recorded study catalog and replay playback when LiveKit Egress is configured
 - LiveKit-powered native study rooms with moderated guest video, persistent chat, and a
   synchronized Scripture workspace for host-led passages, highlights, translations, and AI insight
 - Consent-based host invitations, speaking queue, individual guest mute, and mute-all controls
@@ -113,7 +118,7 @@ authenticated token function:
 ```bash
 supabase secrets set LIVEKIT_URL=wss://your-project.livekit.cloud
 supabase secrets set LIVEKIT_API_KEY=... LIVEKIT_API_SECRET=...
-supabase functions deploy livekit-token livekit-webhook delete-account
+supabase functions deploy livekit-token livekit-webhook livekit-recording delete-account
 ```
 
 Apply the live-study migrations through `009_live_bible_workspace.sql` before enabling the
@@ -128,6 +133,23 @@ the signed webhook URL as
 `https://YOUR_PROJECT.supabase.co/functions/v1/livekit-webhook` so participant counts stay
 synchronized.
 
+Recorded study replays are opt-in per session. To enable LiveKit Egress output, configure an
+S3-compatible bucket and public delivery URL:
+
+```bash
+supabase secrets set \
+  RECORDING_S3_BUCKET=... \
+  RECORDING_S3_REGION=... \
+  RECORDING_S3_ACCESS_KEY=... \
+  RECORDING_S3_SECRET=... \
+  RECORDING_S3_ENDPOINT=... \
+  RECORDING_PUBLIC_BASE_URL=https://media.example.com
+supabase functions deploy livekit-recording livekit-webhook
+```
+
+Without these recording secrets, live studies continue normally and replay requests are
+reported as unavailable instead of recording silently.
+
 Apply `supabase/migrations/006_operations_and_safety.sql` to enable provider request quotas
 and authenticated client error reporting.
 
@@ -139,6 +161,7 @@ Production EAS environments must also define HTTPS values for
 
 - Configure API.Bible translation access and server secrets.
 - Configure LiveKit server secrets and deploy the token function.
+- Configure LiveKit Egress and S3-compatible storage before enabling recorded replays.
 - Complete legal and economic review before adding purchases, redemption, transfers,
   cryptocurrency, or token-based governance to community points.
 - Add store credentials and EAS project ownership before production submission.

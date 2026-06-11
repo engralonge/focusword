@@ -23,6 +23,8 @@ function stream(
     updatedAt: '2026-06-08T00:00:00.000Z',
     isHost: false,
     reminderSet: false,
+    recordingRequested: false,
+    recordingStatus: undefined,
   };
 }
 

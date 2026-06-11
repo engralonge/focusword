@@ -18,7 +18,7 @@ const tabIcons: Record<keyof MainTabParamList, { focused: TabIconName; unfocused
   Live: { focused: 'radio', unfocused: 'radio-outline' },
   Bible: { focused: 'book', unfocused: 'book-outline' },
   Prayer: { focused: 'heart', unfocused: 'heart-outline' },
-  Community: { focused: 'people', unfocused: 'people-outline' },
+  Community: { focused: 'notifications', unfocused: 'notifications-outline' },
   Profile: { focused: 'person', unfocused: 'person-outline' },
 };
 
@@ -59,7 +59,11 @@ export function TabNavigator() {
       <Tab.Screen name="Live" component={LiveStack} />
       <Tab.Screen name="Bible" component={BibleStack} />
       <Tab.Screen name="Prayer" component={PrayerStack} />
-      <Tab.Screen name="Community" component={CommunityStack} />
+      <Tab.Screen
+        name="Community"
+        component={CommunityStack}
+        options={{ tabBarLabel: 'Activity' }}
+      />
       <Tab.Screen name="Profile" component={ProfileStack} />
     </Tab.Navigator>
   );

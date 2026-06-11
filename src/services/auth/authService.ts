@@ -18,6 +18,7 @@ function mapSupabaseUser(user: User): UserProfile {
   return {
     id: user.id,
     email: user.email,
+    avatarUrl: (user.user_metadata?.avatar_url as string | undefined) ?? undefined,
     displayName:
       (user.user_metadata?.display_name as string | undefined) ??
       user.email?.split('@')[0] ??
@@ -149,6 +150,71 @@ export async function updateUserProfile(
     user: { ...mapSupabaseUser(data.user), bio: normalizedBio || undefined },
     error: null,
   };
+}
+
+export async function updateUserAvatar(
+  uri: string | null,
+  selectedMimeType?: string,
+): Promise<{ user: UserProfile | null; error: string | null }> {
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    return { user: null, error: 'Supabase is not configured.' };
+  }
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) {
+    return { user: null, error: userError?.message ?? 'Your session has expired.' };
+  }
+
+  const folder = userData.user.id;
+  const { data: existing } = await supabase.storage.from('avatars').list(folder);
+  if (existing?.length) {
+    await supabase.storage
+      .from('avatars')
+      .remove(existing.map((item) => `${folder}/${item.name}`));
+  }
+
+  let avatarUrl: string | null = null;
+  if (uri) {
+    const response = await fetch(uri);
+    const bytes = await response.arrayBuffer();
+    if (bytes.byteLength > 5 * 1024 * 1024) {
+      return { user: null, error: 'Profile photos must be smaller than 5 MB.' };
+    }
+    const contentType =
+      selectedMimeType ||
+      response.headers.get('content-type')?.split(';')[0] ||
+      'image/jpeg';
+    const extension =
+      contentType === 'image/png'
+        ? 'png'
+        : contentType === 'image/webp'
+          ? 'webp'
+          : 'jpg';
+    const path = `${folder}/avatar.${extension}`;
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(path, bytes, { contentType, upsert: true });
+    if (uploadError) {
+      return { user: null, error: uploadError.message };
+    }
+    const publicResult = supabase.storage.from('avatars').getPublicUrl(path);
+    avatarUrl = `${publicResult.data.publicUrl}?v=${Date.now()}`;
+  }
+
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .update({ avatar_url: avatarUrl })
+    .eq('id', userData.user.id);
+  if (profileError) {
+    return { user: null, error: profileError.message };
+  }
+  const { error: metadataError } = await supabase.auth.updateUser({
+    data: { avatar_url: avatarUrl },
+  });
+  if (metadataError) {
+    return { user: null, error: metadataError.message };
+  }
+  return { user: await fetchUserProfile(), error: null };
 }
 
 export async function fetchUserProfile(): Promise<UserProfile | null> {

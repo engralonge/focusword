@@ -18,6 +18,7 @@ import {
   updatePrayerStatus,
 } from '@/services/community/communityService';
 import { palette } from '@/constants/colors';
+import { Avatar } from '@/components/common/Avatar';
 
 export function PrayerScreen() {
   const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
@@ -180,7 +181,14 @@ export function PrayerScreen() {
         {prayers.map((prayer) => (
           <Card key={prayer.id} className="mb-3 border-brand/15 bg-surface-elevated/80 p-5">
             <View className="flex-row items-center justify-between">
-              <Text variant="subtitle">{prayer.authorName}</Text>
+              <View className="flex-row items-center gap-3">
+                <Avatar
+                  displayName={prayer.authorName}
+                  avatarUrl={prayer.authorAvatarUrl}
+                  size="sm"
+                />
+                <Text variant="subtitle">{prayer.authorName}</Text>
+              </View>
               {prayer.status === 'answered' ? (
                 <View className="rounded-md bg-green-500/15 px-2 py-1">
                   <Text className="text-green-600 text-xs font-semibold">ANSWERED</Text>

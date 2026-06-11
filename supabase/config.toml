@@ -15,5 +15,8 @@ verify_jwt = true
 [functions.livekit-webhook]
 verify_jwt = false
 
+[functions.livekit-recording]
+verify_jwt = true
+
 [functions.delete-account]
 verify_jwt = true

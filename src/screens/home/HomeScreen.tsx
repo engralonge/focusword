@@ -1,18 +1,33 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useIsFocused, useNavigation } from '@react-navigation/native';
 import type { NavigationProp } from '@react-navigation/native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Text } from '@/components/ui/Text';
 import { Card } from '@/components/ui/Card';
 import { useAuth } from '@/context/AuthProvider';
 import { fetchReadingProgress } from '@/services/bible/bibleService';
-import { fetchLiveStreams } from '@/services/streaming/streamingService';
+import {
+  fetchLiveStreams,
+  fetchReadyRecordings,
+} from '@/services/streaming/streamingService';
+import { getLiveKitCredentials } from '@/services/streaming/streamingService';
+import { fetchUnreadActivityCount } from '@/services/activity/activityService';
+import {
+  fetchCommunityPosts,
+  fetchPrayerRequests,
+} from '@/services/community/communityService';
+import { fetchCommunityPointOverview } from '@/services/rewards/rewardService';
 import type { MainTabParamList } from '@/navigation/types';
-import type { LiveStream } from '@/types';
+import type { LiveRecording, LiveStream } from '@/types';
 import type { ReadingProgress } from '@/types/bible';
 import { palette } from '@/constants/colors';
+import { Avatar } from '@/components/common/Avatar';
+import { LiveRoomPreview } from '@/components/live/LiveRoomPreview';
+import { RecordingPreview } from '@/components/live/RecordingPreview';
+
+type PreviewCredentials = Awaited<ReturnType<typeof getLiveKitCredentials>>;
 
 const DAILY_VERSES = [
   {
@@ -53,20 +68,61 @@ function QuickAction({ icon, label, onPress }: QuickActionProps) {
 
 export function HomeScreen() {
   const navigation = useNavigation<NavigationProp<MainTabParamList>>();
+  const isFocused = useIsFocused();
   const { session } = useAuth();
   const [progress, setProgress] = useState<ReadingProgress | null>(null);
   const [liveStudies, setLiveStudies] = useState<LiveStream[]>([]);
+  const [previewStream, setPreviewStream] = useState<LiveStream | null>(null);
+  const [previewCredentials, setPreviewCredentials] = useState<PreviewCredentials | null>(null);
+  const [unreadActivity, setUnreadActivity] = useState(0);
+  const [prayerCount, setPrayerCount] = useState(0);
+  const [communityCount, setCommunityCount] = useState(0);
+  const [pointTotal, setPointTotal] = useState(0);
+  const [latestRecording, setLatestRecording] = useState<LiveRecording | null>(null);
 
   const load = useCallback(async () => {
-    const [readingResult, liveResult] = await Promise.allSettled([
+    const [
+      readingResult,
+      liveResult,
+      activityResult,
+      prayerResult,
+      communityResult,
+      pointsResult,
+      recordingResult,
+    ] = await Promise.allSettled([
       fetchReadingProgress(),
       fetchLiveStreams(),
+      fetchUnreadActivityCount(),
+      fetchPrayerRequests(),
+      fetchCommunityPosts(),
+      fetchCommunityPointOverview(),
+      fetchReadyRecordings(1),
     ]);
     if (readingResult.status === 'fulfilled') {
       setProgress(readingResult.value);
     }
     if (liveResult.status === 'fulfilled') {
-      setLiveStudies(liveResult.value.filter((stream) => stream.status === 'live').slice(0, 2));
+      const live = liveResult.value.filter((stream) => stream.status === 'live').slice(0, 2);
+      setLiveStudies(live);
+      const preview = live.find((stream) => !stream.isHost);
+      if (preview) {
+        setPreviewStream(preview);
+        void getLiveKitCredentials(preview.id)
+          .then(setPreviewCredentials)
+          .catch(() => setPreviewCredentials(null));
+      } else {
+        setPreviewStream(null);
+        setPreviewCredentials(null);
+      }
+    }
+    if (activityResult.status === 'fulfilled') setUnreadActivity(activityResult.value);
+    if (prayerResult.status === 'fulfilled') {
+      setPrayerCount(prayerResult.value.filter((prayer) => prayer.status === 'published').length);
+    }
+    if (communityResult.status === 'fulfilled') setCommunityCount(communityResult.value.length);
+    if (pointsResult.status === 'fulfilled') setPointTotal(pointsResult.value.totalPoints);
+    if (recordingResult.status === 'fulfilled') {
+      setLatestRecording(recordingResult.value[0] ?? null);
     }
   }, []);
 
@@ -90,11 +146,10 @@ export function HomeScreen() {
           <Text variant="label">{greeting}</Text>
           <Text variant="title" className="mt-1">{firstName}</Text>
         </View>
-        <View className="w-11 h-11 rounded-full border border-brand/35 bg-brand/10 items-center justify-center">
-          <Text className="text-brand-light font-semibold">
-            {firstName[0]?.toUpperCase()}
-          </Text>
-        </View>
+        <Avatar
+          displayName={session?.user.displayName ?? firstName}
+          avatarUrl={session?.user.avatarUrl}
+        />
       </View>
 
       <Card className="rounded-3xl border-brand/25 bg-brand/[0.06] p-6 overflow-hidden">
@@ -136,6 +191,79 @@ export function HomeScreen() {
           </View>
         </Pressable>
       ) : null}
+
+      {isFocused && previewStream && previewCredentials ? (
+        <Pressable
+          className="mt-5 overflow-hidden rounded-2xl border border-live/30 bg-black"
+          accessibilityRole="button"
+          accessibilityLabel={`Open live study ${previewStream.title}`}
+          onPress={() =>
+            navigation.navigate('Live', {
+              screen: 'LiveStream',
+              params: { streamId: previewStream.id },
+            })
+          }
+        >
+          <LiveRoomPreview
+            serverUrl={previewCredentials.serverUrl}
+            token={previewCredentials.token}
+          />
+          <View className="px-4 py-4">
+            <Text variant="subtitle">{previewStream.title}</Text>
+            <Text variant="caption" className="mt-1">
+              Hosted by {previewStream.hostName}. Tap to join with audio.
+            </Text>
+          </View>
+        </Pressable>
+      ) : isFocused && latestRecording ? (
+        <Pressable
+          className="mt-5 overflow-hidden rounded-2xl border border-brand/25 bg-black"
+          accessibilityRole="button"
+          accessibilityLabel={`Play replay ${latestRecording.title}`}
+          onPress={() =>
+            navigation.navigate('Live', {
+              screen: 'Replay',
+              params: { recordingId: latestRecording.id },
+            })
+          }
+        >
+          <RecordingPreview uri={latestRecording.playbackUrl} />
+          <View className="px-4 py-4">
+            <Text variant="label">Latest replay</Text>
+            <Text variant="subtitle" className="mt-2">{latestRecording.title}</Text>
+            <Text variant="caption" className="mt-1">
+              Hosted by {latestRecording.hostName}
+            </Text>
+          </View>
+        </Pressable>
+      ) : null}
+
+      <View className="mt-7 mb-3 flex-row items-center justify-between">
+        <Text variant="label">Across your community</Text>
+        <View className="h-px flex-1 ml-4 bg-brand/10" />
+      </View>
+      <View className="flex-row flex-wrap gap-3">
+        <QuickAction
+          icon="notifications-outline"
+          label={`${unreadActivity} new activity`}
+          onPress={() => navigation.navigate('Community', { screen: 'ActivityInbox' })}
+        />
+        <QuickAction
+          icon="heart-outline"
+          label={`${prayerCount} active prayers`}
+          onPress={() => navigation.navigate('Prayer', { screen: 'PrayerMain' })}
+        />
+        <QuickAction
+          icon="chatbubbles-outline"
+          label={`${communityCount} reflections`}
+          onPress={() => navigation.navigate('Community', { screen: 'CommunityMain' })}
+        />
+        <QuickAction
+          icon="sparkles-outline"
+          label={`${pointTotal} community points`}
+          onPress={() => navigation.navigate('Profile', { screen: 'CommunityPoints' })}
+        />
+      </View>
 
       <View className="mt-7 mb-3 flex-row items-center justify-between">
         <Text variant="label">Gather and grow</Text>

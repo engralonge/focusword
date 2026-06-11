@@ -56,6 +56,7 @@ export function LiveStreamScreen() {
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [videoPinned, setVideoPinned] = useState(false);
 
   const loadMessages = useCallback(async () => {
     try {
@@ -253,7 +254,14 @@ export function LiveStreamScreen() {
   });
 
   return (
-    <ScreenContainer contentClassName="px-4">
+    <ScreenContainer
+      contentClassName="px-4"
+      scrollViewProps={{
+        stickyHeaderIndices: stream.status === 'live' && credentials ? [2] : [],
+        scrollEventThrottle: 16,
+        onScroll: (event) => setVideoPinned(event.nativeEvent.contentOffset.y > 220),
+      }}
+    >
       <Card className="mt-2">
         <View className="flex-row items-start justify-between">
           <LiveBadge status={stream.status} />
@@ -282,22 +290,56 @@ export function LiveStreamScreen() {
             {Math.max(participantCount, stream.viewerCount)} connected
           </Text>
         ) : null}
+        {stream.recordingStatus === 'recording' ? (
+          <View className="mt-3 flex-row items-center gap-2">
+            <View className="w-2 h-2 rounded-full bg-live" />
+            <Text variant="caption">This study is being recorded for replay.</Text>
+          </View>
+        ) : stream.recordingRequested && stream.isHost ? (
+          <View className="mt-3 flex-row items-center gap-2">
+            <Ionicons
+              name={
+                stream.recordingStatus === 'failed'
+                  ? 'warning-outline'
+                  : 'hourglass-outline'
+              }
+              size={16}
+              color={stream.recordingStatus === 'failed' ? palette.danger : palette.brandMuted}
+            />
+            <Text variant="caption">
+              {stream.recordingStatus === 'failed'
+                ? 'Replay recording is unavailable. The live study is not being recorded.'
+                : 'Replay recording is being prepared.'}
+            </Text>
+          </View>
+        ) : null}
       </Card>
 
-      {error ? <Text className="text-red-500 text-center mt-4">{error}</Text> : null}
+      <View>
+        {error ? <Text className="text-red-500 text-center mt-4">{error}</Text> : null}
+      </View>
 
       {stream.status === 'live' && credentials ? (
-        <View className="mt-5">
+        <View className="mt-5 bg-background pb-2">
           <LiveRoomView
             key={credentials.token}
             serverUrl={credentials.serverUrl}
             token={credentials.token}
             isHost={credentials.isHost}
             canPublish={credentials.canPublish}
+            compact={videoPinned}
             onParticipantCount={setParticipantCount}
             onParticipantsChange={setRoomParticipants}
+            onLeave={navigation.goBack}
             onError={setError}
           />
+        </View>
+      ) : (
+        <View />
+      )}
+
+      {stream.status === 'live' && credentials ? (
+        <View>
           <LiveBibleWorkspace
             streamId={stream.id}
             isHost={stream.isHost}

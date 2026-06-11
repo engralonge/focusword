@@ -1,4 +1,9 @@
-import { ScrollView, View, type ViewProps } from 'react-native';
+import {
+  ScrollView,
+  View,
+  type ScrollViewProps,
+  type ViewProps,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { cn } from '@/utils/cn';
 
@@ -6,12 +11,14 @@ type Props = ViewProps & {
   scroll?: boolean;
   className?: string;
   contentClassName?: string;
+  scrollViewProps?: ScrollViewProps;
 };
 
 export function ScreenContainer({
   scroll = true,
   className,
   contentClassName,
+  scrollViewProps,
   children,
   ...props
 }: Props) {
@@ -20,6 +27,7 @@ export function ScreenContainer({
       className={cn('flex-1', contentClassName)}
       contentContainerClassName="pb-10"
       showsVerticalScrollIndicator={false}
+      {...scrollViewProps}
     >
       {children}
     </ScrollView>

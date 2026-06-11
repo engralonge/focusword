@@ -1,21 +1,52 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import * as SecureStore from 'expo-secure-store';
+import { createClient, processLock, SupabaseClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
+import { AppState, Platform } from 'react-native';
 import { config, isSupabaseConfigured } from '@/constants/config';
 
-const SessionStorageAdapter = {
-  getItem: (key: string) =>
-    Platform.OS === 'web' ? AsyncStorage.getItem(key) : SecureStore.getItemAsync(key),
-  setItem: (key: string, value: string) =>
-    Platform.OS === 'web'
-      ? AsyncStorage.setItem(key, value)
-      : SecureStore.setItemAsync(key, value),
-  removeItem: (key: string) =>
-    Platform.OS === 'web' ? AsyncStorage.removeItem(key) : SecureStore.deleteItemAsync(key),
+let client: SupabaseClient | null = null;
+let refreshLifecycleConfigured = false;
+
+const MigratingSessionStorage = {
+  async getItem(key: string) {
+    const current = await AsyncStorage.getItem(key);
+    if (current || Platform.OS === 'web') return current;
+    try {
+      const legacy = await SecureStore.getItemAsync(key);
+      if (legacy) {
+        await AsyncStorage.setItem(key, legacy);
+        await SecureStore.deleteItemAsync(key);
+      }
+      return legacy;
+    } catch {
+      return null;
+    }
+  },
+  setItem: (key: string, value: string) => AsyncStorage.setItem(key, value),
+  removeItem: async (key: string) => {
+    await AsyncStorage.removeItem(key);
+    if (Platform.OS !== 'web') {
+      await SecureStore.deleteItemAsync(key).catch(() => undefined);
+    }
+  },
 };
 
-let client: SupabaseClient | null = null;
+function configureRefreshLifecycle(supabase: SupabaseClient) {
+  if (refreshLifecycleConfigured || Platform.OS === 'web') {
+    return;
+  }
+  refreshLifecycleConfigured = true;
+  if (AppState.currentState === 'active') {
+    supabase.auth.startAutoRefresh();
+  }
+  AppState.addEventListener('change', (state) => {
+    if (state === 'active') {
+      supabase.auth.startAutoRefresh();
+    } else {
+      supabase.auth.stopAutoRefresh();
+    }
+  });
+}
 
 export function getSupabaseClient(): SupabaseClient | null {
   if (!isSupabaseConfigured()) {
@@ -24,12 +55,14 @@ export function getSupabaseClient(): SupabaseClient | null {
   if (!client) {
     client = createClient(config.supabase.url, config.supabase.anonKey, {
       auth: {
-        storage: SessionStorageAdapter,
+        storage: MigratingSessionStorage,
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: false,
+        lock: processLock,
       },
     });
+    configureRefreshLifecycle(client);
   }
   return client;
 }

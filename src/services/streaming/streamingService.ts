@@ -1,6 +1,7 @@
 import type {
   LiveMessage,
   LiveBibleWorkspace,
+  LiveRecording,
   LiveStageRequest,
   LiveStageStatus,
   LiveStream,
@@ -49,7 +50,7 @@ export async function fetchLiveStreams(): Promise<LiveStream[]> {
   const { data: rows, error } = await supabase
     .from('live_streams')
     .select(
-      'id, title, description, host_id, room_name, status, viewer_count, scheduled_at, created_at, updated_at',
+      'id, title, description, host_id, room_name, status, viewer_count, scheduled_at, created_at, updated_at, recording_requested',
     )
     .order('created_at', { ascending: false });
   if (error) {
@@ -59,14 +60,24 @@ export async function fetchLiveStreams(): Promise<LiveStream[]> {
     return [];
   }
 
-  const [names, reminders] = await Promise.all([
+  const [names, reminders, recordings] = await Promise.all([
     profileNames(supabase, rows.map((row) => row.host_id)),
     supabase.from('live_reminders').select('stream_id').eq('user_id', user.id),
+    supabase
+      .from('live_recording_statuses')
+      .select('stream_id, status')
+      .in('stream_id', rows.map((row) => row.id)),
   ]);
   if (reminders.error) {
     throw new Error(reminders.error.message);
   }
+  if (recordings.error) {
+    throw new Error(recordings.error.message);
+  }
   const remindedIds = new Set((reminders.data ?? []).map((item) => item.stream_id));
+  const recordingStatuses = new Map(
+    (recordings.data ?? []).map((item) => [item.stream_id, item.status]),
+  );
 
   return rows.map((row) => ({
     id: row.id,
@@ -82,6 +93,8 @@ export async function fetchLiveStreams(): Promise<LiveStream[]> {
     updatedAt: row.updated_at,
     isHost: row.host_id === user.id,
     reminderSet: remindedIds.has(row.id),
+    recordingRequested: Boolean(row.recording_requested),
+    recordingStatus: recordingStatuses.get(row.id) as LiveStream['recordingStatus'],
   }));
 }
 
@@ -95,6 +108,7 @@ export async function createLiveStream(input: {
   description?: string;
   scheduledAt?: string;
   startNow: boolean;
+  recordingRequested?: boolean;
 }): Promise<string> {
   const { supabase, user } = await requireUser();
   validateLiveStudy(input);
@@ -111,11 +125,15 @@ export async function createLiveStream(input: {
       room_name: roomName,
       status: input.startNow ? 'live' : 'scheduled',
       scheduled_at: input.startNow ? null : input.scheduledAt,
+      recording_requested: Boolean(input.recordingRequested),
     })
     .select('id')
     .single();
   if (error || !data) {
     throw new Error(error?.message ?? 'Could not create the live study.');
+  }
+  if (input.startNow && input.recordingRequested) {
+    void manageLiveRecording(data.id, 'start').catch(() => undefined);
   }
   return data.id;
 }
@@ -132,6 +150,65 @@ export async function updateStreamStatus(
   if (error) {
     throw new Error(error.message);
   }
+  const stream = await fetchStreamById(streamId);
+  if (stream?.recordingRequested) {
+    void manageLiveRecording(streamId, status === 'live' ? 'start' : 'stop')
+      .catch(() => undefined);
+  }
+}
+
+async function manageLiveRecording(
+  streamId: string,
+  action: 'start' | 'stop',
+): Promise<void> {
+  const { supabase } = await requireUser();
+  const { data, error } = await supabase.functions.invoke<{ error?: string }>(
+    'livekit-recording',
+    { body: { streamId, action } },
+  );
+  if (error || data?.error) {
+    throw new Error(data?.error ?? error?.message ?? 'Could not update recording.');
+  }
+}
+
+export async function fetchReadyRecordings(limit = 10): Promise<LiveRecording[]> {
+  const { supabase } = await requireUser();
+  const { data: recordings, error } = await supabase
+    .from('live_recordings')
+    .select('id, stream_id, playback_url, duration_seconds, ready_at')
+    .eq('status', 'ready')
+    .not('playback_url', 'is', null)
+    .order('ready_at', { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  if (!recordings?.length) return [];
+
+  const { data: streams, error: streamError } = await supabase
+    .from('live_streams')
+    .select('id, title, host_id')
+    .in('id', recordings.map((item) => item.stream_id));
+  if (streamError) throw new Error(streamError.message);
+  const names = await profileNames(supabase, (streams ?? []).map((stream) => stream.host_id));
+  const streamMap = new Map((streams ?? []).map((stream) => [stream.id, stream]));
+
+  return recordings.flatMap((recording) => {
+    const stream = streamMap.get(recording.stream_id);
+    if (!stream || !recording.playback_url || !recording.ready_at) return [];
+    return [{
+      id: recording.id,
+      streamId: recording.stream_id,
+      title: stream.title,
+      hostName: names.get(stream.host_id) ?? 'Host',
+      playbackUrl: recording.playback_url,
+      durationSeconds: recording.duration_seconds ?? undefined,
+      readyAt: recording.ready_at,
+    }];
+  });
+}
+
+export async function fetchRecordingById(id: string): Promise<LiveRecording | null> {
+  const recordings = await fetchReadyRecordings(100);
+  return recordings.find((recording) => recording.id === id) ?? null;
 }
 
 export async function deleteLiveStream(streamId: string): Promise<void> {

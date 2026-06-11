@@ -6,7 +6,7 @@ import type {
 } from '@/types';
 import { getSupabaseClient } from '@/services/supabase/client';
 
-type ProfileNameMap = Map<string, string>;
+type ProfileSummaryMap = Map<string, { name: string; avatarUrl?: string }>;
 
 async function requireUser() {
   const supabase = getSupabaseClient();
@@ -23,13 +23,13 @@ async function requireUser() {
 async function getProfileNames(
   supabase: NonNullable<ReturnType<typeof getSupabaseClient>>,
   userIds: string[],
-): Promise<ProfileNameMap> {
+): Promise<ProfileSummaryMap> {
   if (userIds.length === 0) {
     return new Map();
   }
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, display_name')
+    .select('id, display_name, avatar_url')
     .in('id', [...new Set(userIds)]);
   if (error) {
     throw new Error(error.message);
@@ -37,7 +37,10 @@ async function getProfileNames(
   return new Map(
     (data ?? []).map((profile) => [
       profile.id,
-      profile.display_name?.trim() || 'Community member',
+      {
+        name: profile.display_name?.trim() || 'Community member',
+        avatarUrl: profile.avatar_url ?? undefined,
+      },
     ]),
   );
 }
@@ -82,7 +85,8 @@ export async function fetchCommunityPosts(): Promise<CommunityPost[]> {
     return {
       id: post.id,
       userId: post.user_id,
-      authorName: profiles.get(post.user_id) ?? 'Community member',
+      authorName: profiles.get(post.user_id)?.name ?? 'Community member',
+      authorAvatarUrl: profiles.get(post.user_id)?.avatarUrl,
       body: post.body,
       reactionCount: reactions.length,
       reactedByMe: reactions.some((item) => item.user_id === user.id),
@@ -165,7 +169,8 @@ export async function fetchCommunityComments(postId: string): Promise<CommunityC
     id: comment.id,
     postId: comment.post_id,
     userId: comment.user_id,
-    authorName: profiles.get(comment.user_id) ?? 'Community member',
+    authorName: profiles.get(comment.user_id)?.name ?? 'Community member',
+    authorAvatarUrl: profiles.get(comment.user_id)?.avatarUrl,
     body: comment.body,
     isOwner: comment.user_id === user.id,
     createdAt: comment.created_at,
@@ -238,7 +243,10 @@ export async function fetchPrayerRequests(): Promise<PrayerRequest[]> {
       userId: prayer.user_id,
       authorName: prayer.is_anonymous
         ? 'Anonymous'
-        : profiles.get(prayer.user_id) ?? 'Community member',
+        : profiles.get(prayer.user_id)?.name ?? 'Community member',
+      authorAvatarUrl: prayer.is_anonymous
+        ? undefined
+        : profiles.get(prayer.user_id)?.avatarUrl,
       content: prayer.content,
       isAnonymous: prayer.is_anonymous,
       status: prayer.status as PrayerRequest['status'],

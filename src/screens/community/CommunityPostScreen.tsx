@@ -14,6 +14,7 @@ import {
   fetchCommunityComments,
 } from '@/services/community/communityService';
 import { palette } from '@/constants/colors';
+import { Avatar } from '@/components/common/Avatar';
 
 type Route = RouteProp<CommunityStackParamList, 'CommunityPost'>;
 
@@ -71,7 +72,14 @@ export function CommunityPostScreen() {
   return (
     <ScreenContainer contentClassName="px-4">
       <Card className="mt-3 mb-5">
-        <Text variant="subtitle">{params.post.authorName}</Text>
+        <View className="flex-row items-center gap-3">
+          <Avatar
+            displayName={params.post.authorName}
+            avatarUrl={params.post.authorAvatarUrl}
+            size="sm"
+          />
+          <Text variant="subtitle">{params.post.authorName}</Text>
+        </View>
         <Text className="mt-2">{params.post.body}</Text>
       </Card>
       <Text variant="label" className="mb-2">Comments</Text>
@@ -83,7 +91,14 @@ export function CommunityPostScreen() {
       {comments.map((comment) => (
         <View key={comment.id} className="py-3 border-b border-black/5 dark:border-white/10">
           <View className="flex-row justify-between">
-            <Text className="font-semibold">{comment.authorName}</Text>
+            <View className="flex-row items-center gap-3">
+              <Avatar
+                displayName={comment.authorName}
+                avatarUrl={comment.authorAvatarUrl}
+                size="sm"
+              />
+              <Text className="font-semibold">{comment.authorName}</Text>
+            </View>
             {comment.isOwner ? (
               <Pressable
                 className="w-9 h-9 items-center justify-center"
