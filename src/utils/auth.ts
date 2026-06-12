@@ -1,3 +1,5 @@
+import type { UserProfile } from '@/types';
+
 export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
@@ -31,6 +33,25 @@ export function validateProfile(displayName: string, bio = ''): string | null {
   }
   if (bio.trim().length > 280) {
     return 'Bios cannot exceed 280 characters.';
+  }
+  return null;
+}
+
+export function getAccountRestrictionMessage(
+  profile: UserProfile | null,
+  now = Date.now(),
+): string | null {
+  if (profile?.accountStatus === 'banned') {
+    return 'This account has been banned. Contact support for help.';
+  }
+  if (
+    profile?.accountStatus === 'suspended' &&
+    profile.suspendedUntil &&
+    new Date(profile.suspendedUntil).getTime() > now
+  ) {
+    return `This account is suspended until ${new Date(
+      profile.suspendedUntil,
+    ).toLocaleString()}.`;
   }
   return null;
 }

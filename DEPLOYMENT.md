@@ -34,6 +34,20 @@ supabase functions deploy livekit-webhook --no-verify-jwt
 supabase functions deploy delete-account
 ```
 
+Assign the first administrator from the Supabase SQL Editor. Replace the email
+with the account that should receive the in-app moderation console:
+
+```sql
+update public.profiles
+set role = 'admin'
+where id = (
+  select id from auth.users where lower(email) = lower('admin@example.com')
+);
+```
+
+Only administrators can assign or remove moderator/admin roles. Moderators can
+review reports and manage sanctions but cannot promote accounts.
+
 ## 2. LiveKit
 
 Create a signed webhook in LiveKit Cloud:
@@ -80,6 +94,9 @@ On physical iOS and Android devices, verify:
 - sign-up, email verification, password reset, sign-out, and account deletion;
 - Bible browsing, provider copyright, search, notes, highlights, bookmarks, and summaries;
 - community posts, comments, reactions, prayers, and moderation policies;
+- content and account reporting, two-way block visibility, anonymous-prayer identity
+  protection, moderator queue decisions, suspension/ban enforcement, sanction reversal,
+  and immutable moderation audit history;
 - prayer progress updates, answered testimonies, anonymity, and timeline ownership policies;
 - Focus Mode consent, foreground-only time credit, interruption tracking, session recovery,
   and Android/iOS system-settings links;

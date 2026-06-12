@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Pressable, TextInput, View } from 'react-native';
-import { useRoute, type RouteProp } from '@react-navigation/native';
+import {
+  useNavigation,
+  useRoute,
+  type RouteProp,
+} from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Card } from '@/components/ui/Card';
@@ -15,11 +19,13 @@ import {
 } from '@/services/community/communityService';
 import { palette } from '@/constants/colors';
 import { Avatar } from '@/components/common/Avatar';
+import { SafetyActions } from '@/components/safety/SafetyActions';
 
 type Route = RouteProp<CommunityStackParamList, 'CommunityPost'>;
 
 export function CommunityPostScreen() {
   const { params } = useRoute<Route>();
+  const navigation = useNavigation();
   const [comments, setComments] = useState<CommunityComment[]>([]);
   const [draft, setDraft] = useState('');
   const [loading, setLoading] = useState(true);
@@ -72,13 +78,25 @@ export function CommunityPostScreen() {
   return (
     <ScreenContainer contentClassName="px-4">
       <Card className="mt-3 mb-5">
-        <View className="flex-row items-center gap-3">
-          <Avatar
-            displayName={params.post.authorName}
-            avatarUrl={params.post.authorAvatarUrl}
-            size="sm"
-          />
-          <Text variant="subtitle">{params.post.authorName}</Text>
+        <View className="flex-row items-center justify-between">
+          <View className="flex-row items-center gap-3">
+            <Avatar
+              displayName={params.post.authorName}
+              avatarUrl={params.post.authorAvatarUrl}
+              size="sm"
+            />
+            <Text variant="subtitle">{params.post.authorName}</Text>
+          </View>
+          {!params.post.isOwner ? (
+            <SafetyActions
+              targetType="community_post"
+              targetId={params.post.id}
+              targetUserId={params.post.userId}
+              targetLabel={params.post.authorName}
+              onChanged={navigation.goBack}
+              onError={setError}
+            />
+          ) : null}
         </View>
         <Text className="mt-2">{params.post.body}</Text>
       </Card>
@@ -108,7 +126,16 @@ export function CommunityPostScreen() {
               >
                 <Ionicons name="trash-outline" size={18} color={palette.danger} />
               </Pressable>
-            ) : null}
+            ) : (
+              <SafetyActions
+                targetType="community_comment"
+                targetId={comment.id}
+                targetUserId={comment.userId}
+                targetLabel={comment.authorName}
+                onChanged={() => void load()}
+                onError={setError}
+              />
+            )}
           </View>
           <Text className="mt-1">{comment.body}</Text>
         </View>

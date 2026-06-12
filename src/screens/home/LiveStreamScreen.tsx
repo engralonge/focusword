@@ -48,6 +48,7 @@ import {
 import { palette } from '@/constants/colors';
 import { reportError } from '@/services/observability/errorReporter';
 import { shouldRefreshLiveCredentials } from '@/utils/live';
+import { SafetyActions } from '@/components/safety/SafetyActions';
 
 type Route = RouteProp<LiveStackParamList, 'LiveStream'>;
 type Nav = NativeStackNavigationProp<LiveStackParamList, 'LiveStream'>;
@@ -430,7 +431,15 @@ export function LiveStreamScreen() {
             >
               <Ionicons name="trash-outline" size={20} color={palette.danger} />
             </Pressable>
-          ) : null}
+          ) : (
+            <SafetyActions
+              targetType="live_stream"
+              targetId={stream.id}
+              targetUserId={stream.hostId}
+              targetLabel={stream.hostName}
+              onError={setError}
+            />
+          )}
         </View>
         <Text variant="title" className="mt-3">{stream.title}</Text>
         <Text variant="caption" className="mt-1">Hosted by {stream.hostName}</Text>
@@ -816,7 +825,19 @@ export function LiveStreamScreen() {
                 : 'self-start bg-surface-light dark:bg-surface'
             }`}
           >
-            <Text variant="label">{message.authorName}</Text>
+            <View className="flex-row items-center justify-between">
+              <Text variant="label">{message.authorName}</Text>
+              {!message.isOwner ? (
+                <SafetyActions
+                  targetType="live_message"
+                  targetId={message.id}
+                  targetUserId={message.userId}
+                  targetLabel={message.authorName}
+                  onChanged={() => void loadMessages()}
+                  onError={setError}
+                />
+              ) : null}
+            </View>
             <Text className="mt-1">{message.body}</Text>
             <Text variant="caption" className="mt-1">
               {new Date(message.createdAt).toLocaleTimeString([], {

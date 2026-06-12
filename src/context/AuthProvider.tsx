@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import * as Linking from 'expo-linking';
+import { AppState } from 'react-native';
 import type { AuthSession } from '@/services/auth/authService';
 import {
   getCurrentSession,
@@ -23,6 +24,7 @@ import {
   updateUserAvatar,
   updateUserProfile,
 } from '@/services/auth/authService';
+import { getAccountRestrictionMessage } from '@/utils/auth';
 
 type AuthContextValue = {
   session: AuthSession | null;
@@ -64,7 +66,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (current) {
           const profile = await fetchUserProfile();
           if (mounted) {
-            setSession(profile ? { ...current, user: profile } : current);
+            if (getAccountRestrictionMessage(profile)) {
+              await authSignOut();
+              setSession(null);
+            } else {
+              setSession(profile ? { ...current, user: profile } : current);
+            }
           }
         } else {
           setSession(null);
@@ -80,6 +87,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const linkSubscription = Linking.addEventListener('url', ({ url }) => {
       void openUrl(url);
+    });
+    const appStateSubscription = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') return;
+      void fetchUserProfile().then((profile) => {
+        if (!profile) return;
+        if (getAccountRestrictionMessage(profile)) {
+          void authSignOut().finally(() => setSession(null));
+          return;
+        }
+        setSession((current) => current ? { ...current, user: profile } : current);
+      });
     });
     const unsubscribe = onAuthStateChange((nextSession, event) => {
       setSession((current) =>
@@ -101,6 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       mounted = false;
       linkSubscription.remove();
+      appStateSubscription.remove();
       unsubscribe?.();
     };
   }, []);

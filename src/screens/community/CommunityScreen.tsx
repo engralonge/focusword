@@ -21,6 +21,7 @@ import {
 import { palette } from '@/constants/colors';
 import { fetchUnreadActivityCount } from '@/services/activity/activityService';
 import { Avatar } from '@/components/common/Avatar';
+import { SafetyActions } from '@/components/safety/SafetyActions';
 
 type Nav = NativeStackNavigationProp<CommunityStackParamList, 'CommunityMain'>;
 
@@ -201,7 +202,16 @@ export function CommunityScreen() {
                     <Ionicons name="trash-outline" size={20} color={palette.danger} />
                   </Pressable>
                 </View>
-              ) : null}
+              ) : (
+                <SafetyActions
+                  targetType="community_post"
+                  targetId={post.id}
+                  targetUserId={post.userId}
+                  targetLabel={post.authorName}
+                  onChanged={() => void load()}
+                  onError={setError}
+                />
+              )}
             </View>
             <Text variant="body" className="mt-3 leading-7">{post.body}</Text>
             <View className="mt-4 pt-3 border-t border-border-subtle flex-row gap-5">

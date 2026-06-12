@@ -19,6 +19,7 @@ import {
 } from '@/services/community/communityService';
 import { palette } from '@/constants/colors';
 import { Avatar } from '@/components/common/Avatar';
+import { SafetyActions } from '@/components/safety/SafetyActions';
 
 export function PrayerScreen() {
   const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
@@ -189,11 +190,24 @@ export function PrayerScreen() {
                 />
                 <Text variant="subtitle">{prayer.authorName}</Text>
               </View>
-              {prayer.status === 'answered' ? (
-                <View className="rounded-md bg-green-500/15 px-2 py-1">
-                  <Text className="text-green-600 text-xs font-semibold">ANSWERED</Text>
-                </View>
-              ) : null}
+              <View className="flex-row items-center">
+                {prayer.status === 'answered' ? (
+                  <View className="rounded-md bg-green-500/15 px-2 py-1">
+                    <Text className="text-green-600 text-xs font-semibold">ANSWERED</Text>
+                  </View>
+                ) : null}
+                {!prayer.isOwner ? (
+                  <SafetyActions
+                    targetType="prayer_request"
+                    targetId={prayer.id}
+                    targetUserId={prayer.isAnonymous ? undefined : prayer.userId}
+                    targetLabel={prayer.authorName}
+                    allowBlock={!prayer.isAnonymous}
+                    onChanged={() => void load()}
+                    onError={setError}
+                  />
+                ) : null}
+              </View>
             </View>
             <Text variant="body" className="mt-3 leading-7">{prayer.content}</Text>
             {prayer.updates.length ? (
@@ -235,7 +249,17 @@ export function PrayerScreen() {
                         >
                           <Ionicons name="trash-outline" size={17} color={palette.danger} />
                         </Pressable>
-                      ) : null}
+                      ) : (
+                        <SafetyActions
+                          targetType="prayer_update"
+                          targetId={entry.id}
+                          targetUserId={prayer.isAnonymous ? undefined : prayer.userId}
+                          targetLabel={prayer.authorName}
+                          allowBlock={!prayer.isAnonymous}
+                          onChanged={() => void load()}
+                          onError={setError}
+                        />
+                      )}
                     </View>
                     <Text className="mt-1 leading-6">{entry.body}</Text>
                     <Text variant="caption" className="mt-1">

@@ -1,4 +1,5 @@
 import {
+  getAccountRestrictionMessage,
   normalizeEmail,
   validateEmail,
   validatePassword,
@@ -27,5 +28,32 @@ describe('auth domain validation', () => {
     expect(validateProfile('A')).toContain('between 2 and 80');
     expect(validateProfile('Reader', 'A'.repeat(281))).toContain('280');
     expect(validateProfile('Reader', 'Learning together.')).toBeNull();
+  });
+
+  it('describes active account sanctions', () => {
+    const now = Date.parse('2026-06-12T12:00:00.000Z');
+    expect(
+      getAccountRestrictionMessage({
+        id: 'member',
+        displayName: 'Member',
+        accountStatus: 'banned',
+      }, now),
+    ).toContain('banned');
+    expect(
+      getAccountRestrictionMessage({
+        id: 'member',
+        displayName: 'Member',
+        accountStatus: 'suspended',
+        suspendedUntil: '2026-06-13T12:00:00.000Z',
+      }, now),
+    ).toContain('suspended until');
+    expect(
+      getAccountRestrictionMessage({
+        id: 'member',
+        displayName: 'Member',
+        accountStatus: 'suspended',
+        suspendedUntil: '2026-06-11T12:00:00.000Z',
+      }, now),
+    ).toBeNull();
   });
 });

@@ -7,6 +7,7 @@ import {
   validateEmail,
   validatePassword,
   validateProfile,
+  getAccountRestrictionMessage,
 } from '@/utils/auth';
 
 export type AuthSession = {
@@ -49,8 +50,17 @@ export async function signInWithEmail(
   if (!data.user) {
     return { session: null, error: 'No user returned' };
   }
+  const profile = await fetchUserProfile();
+  const restriction = getAccountRestrictionMessage(profile);
+  if (restriction) {
+    await supabase.auth.signOut();
+    return { session: null, error: restriction };
+  }
   return {
-    session: { user: mapSupabaseUser(data.user), accessToken: data.session?.access_token },
+    session: {
+      user: profile ?? mapSupabaseUser(data.user),
+      accessToken: data.session?.access_token,
+    },
     error: null,
   };
 }
@@ -228,7 +238,7 @@ export async function fetchUserProfile(): Promise<UserProfile | null> {
   }
   const { data } = await supabase
     .from('profiles')
-    .select('display_name, avatar_url, bio')
+    .select('display_name, avatar_url, bio, role, account_status, suspended_until')
     .eq('id', authData.user.id)
     .maybeSingle();
   return {
@@ -236,6 +246,9 @@ export async function fetchUserProfile(): Promise<UserProfile | null> {
     displayName: data?.display_name?.trim() || mapSupabaseUser(authData.user).displayName,
     avatarUrl: data?.avatar_url ?? undefined,
     bio: data?.bio ?? undefined,
+    role: data?.role as UserProfile['role'],
+    accountStatus: data?.account_status as UserProfile['accountStatus'],
+    suspendedUntil: data?.suspended_until ?? undefined,
   };
 }
 

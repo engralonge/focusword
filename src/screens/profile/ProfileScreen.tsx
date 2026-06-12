@@ -69,7 +69,7 @@ export function ProfileScreen() {
           <Ionicons name="chevron-forward" size={18} color={palette.muted} />
         </Pressable>
         <Pressable
-          className="flex-row items-center gap-4 px-4 py-4"
+          className="flex-row items-center gap-4 px-4 py-4 border-b border-border-subtle"
           onPress={() => navigation.navigate('Settings')}
         >
           <View className="w-10 h-10 rounded-xl bg-brand/10 items-center justify-center">
@@ -78,6 +78,32 @@ export function ProfileScreen() {
           <Text className="flex-1 font-medium">Settings</Text>
           <Ionicons name="chevron-forward" size={18} color={palette.muted} />
         </Pressable>
+        <Pressable
+          className={`flex-row items-center gap-4 px-4 py-4 ${
+            session?.user.role === 'moderator' || session?.user.role === 'admin'
+              ? 'border-b border-border-subtle'
+              : ''
+          }`}
+          onPress={() => navigation.navigate('BlockedUsers')}
+        >
+          <View className="w-10 h-10 rounded-xl bg-brand/10 items-center justify-center">
+            <Ionicons name="shield-checkmark-outline" size={20} color={palette.brand} />
+          </View>
+          <Text className="flex-1 font-medium">Safety and blocked accounts</Text>
+          <Ionicons name="chevron-forward" size={18} color={palette.muted} />
+        </Pressable>
+        {session?.user.role === 'moderator' || session?.user.role === 'admin' ? (
+          <Pressable
+            className="flex-row items-center gap-4 px-4 py-4"
+            onPress={() => navigation.navigate('Moderation')}
+          >
+            <View className="w-10 h-10 rounded-xl bg-red-500/10 items-center justify-center">
+              <Ionicons name="flag-outline" size={20} color={palette.danger} />
+            </View>
+            <Text className="flex-1 font-medium">Moderation queue</Text>
+            <Ionicons name="chevron-forward" size={18} color={palette.muted} />
+          </Pressable>
+        ) : null}
       </View>
       <Text variant="caption" className="mt-5 text-center">{config.appName}</Text>
       <Button title="Sign out" variant="ghost" className="mt-2" onPress={() => void signOut()} />

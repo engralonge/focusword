@@ -66,6 +66,66 @@ export type UserProfile = {
   avatarUrl?: string;
   email?: string;
   bio?: string;
+  role?: 'member' | 'moderator' | 'admin';
+  accountStatus?: 'active' | 'suspended' | 'banned';
+  suspendedUntil?: string;
+};
+
+export type ReportTargetType =
+  | 'user'
+  | 'community_post'
+  | 'community_comment'
+  | 'prayer_request'
+  | 'prayer_update'
+  | 'live_stream'
+  | 'live_message';
+
+export type ReportReason =
+  | 'spam'
+  | 'harassment'
+  | 'hate'
+  | 'sexual'
+  | 'violence'
+  | 'misinformation'
+  | 'other';
+
+export type ModerationReport = {
+  id: string;
+  targetType: ReportTargetType;
+  targetId: string;
+  targetUserId: string;
+  targetDisplayName: string;
+  reason: ReportReason;
+  details?: string;
+  contentExcerpt?: string;
+  status: 'open' | 'reviewing' | 'resolved' | 'dismissed';
+  resolutionNote?: string;
+  createdAt: string;
+};
+
+export type BlockedUser = {
+  userId: string;
+  displayName: string;
+  avatarUrl?: string;
+  blockedAt: string;
+};
+
+export type ModerationAuditEvent = {
+  id: string;
+  action: string;
+  targetDisplayName?: string;
+  note?: string;
+  createdAt: string;
+};
+
+export type UserSanction = {
+  id: string;
+  userId: string;
+  displayName: string;
+  kind: 'suspension' | 'ban';
+  reason: string;
+  endsAt?: string;
+  createdAt: string;
 };
 
 export type LiveStreamStatus = 'scheduled' | 'live' | 'ended';

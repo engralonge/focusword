@@ -42,6 +42,8 @@ export type ProfileStackParamList = {
   CommunityPoints: undefined;
   EditProfile: undefined;
   Settings: undefined;
+  BlockedUsers: undefined;
+  Moderation: undefined;
 };
 
 export type AuthStackParamList = {
