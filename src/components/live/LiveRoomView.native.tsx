@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Linking,
@@ -331,6 +331,7 @@ function RoomContent({
 }
 
 export function LiveRoomView(props: Props) {
+  const leaveHandled = useRef(false);
   const [initialPermissions, setInitialPermissions] =
     useState<MediaPermissionState>({
       camera: false,
@@ -384,6 +385,14 @@ export function LiveRoomView(props: Props) {
     };
   }, [props.canPublish, props.isHost, props.onError]);
 
+  const handleRoomExit = useCallback(() => {
+    if (leaveHandled.current) {
+      return;
+    }
+    leaveHandled.current = true;
+    props.onLeave();
+  }, [props.onLeave]);
+
   if (!permissionsReady) {
     return (
       <View className="aspect-video bg-black rounded-lg items-center justify-center px-6">
@@ -402,6 +411,7 @@ export function LiveRoomView(props: Props) {
       connect
       audio={props.isHost && initialPermissions.microphone}
       video={props.isHost && initialPermissions.camera}
+      onDisconnected={handleRoomExit}
       onError={(error) => props.onError(error.message)}
       onMediaDeviceFailure={(failure) =>
         props.onError(
@@ -419,7 +429,7 @@ export function LiveRoomView(props: Props) {
         initialPermissions={initialPermissions}
         onParticipantCount={props.onParticipantCount}
         onParticipantsChange={props.onParticipantsChange}
-        onLeave={props.onLeave}
+        onLeave={handleRoomExit}
         onError={props.onError}
       />
     </LiveKitRoom>
