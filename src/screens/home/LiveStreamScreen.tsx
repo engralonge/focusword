@@ -160,12 +160,14 @@ export function LiveStreamScreen() {
       | 'invite'
       | 'accept_invite'
       | 'decline_invite'
+      | 'leave'
       | 'approve'
       | 'decline'
       | 'remove'
       | 'mute'
       | 'camera_off'
-      | 'mute_all',
+      | 'mute_all'
+      | 'end',
     targetUserId?: string,
   ) => {
     setWorking(true);
@@ -270,7 +272,11 @@ export function LiveStreamScreen() {
     : null;
   const ownStageRequest = stageRequests.find((request) => request.isCurrentUser);
   const pendingStageRequests = stageRequests.filter((request) => request.status === 'pending');
-  const approvedGuests = stageRequests.filter((request) => request.status === 'approved');
+  const approvedGuests = stageRequests.filter(
+    (request) =>
+      request.status === 'approved' &&
+      roomParticipants.some((participant) => participant.userId === request.userId),
+  );
   const invitedGuests = stageRequests.filter((request) => request.status === 'invited');
   const audienceMembers = roomParticipants.filter((participant) => {
     if (participant.userId === stream.hostId) return false;
@@ -356,7 +362,15 @@ export function LiveStreamScreen() {
             compact={videoPinned}
             onParticipantCount={setParticipantCount}
             onParticipantsChange={setRoomParticipants}
-            onLeave={navigation.goBack}
+            onLeave={() => {
+              if (!stream.isHost && credentials.canPublish) {
+                void performLiveStageAction(stream.id, 'leave').finally(
+                  navigation.goBack,
+                );
+                return;
+              }
+              navigation.goBack();
+            }}
             onError={setError}
           />
         </View>

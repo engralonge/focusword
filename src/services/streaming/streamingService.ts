@@ -142,6 +142,14 @@ export async function updateStreamStatus(
   streamId: string,
   status: LiveStreamStatus,
 ): Promise<void> {
+  if (status === 'ended') {
+    await performLiveStageAction(streamId, 'end');
+    const stream = await fetchStreamById(streamId);
+    if (stream?.recordingRequested) {
+      void manageLiveRecording(streamId, 'stop').catch(() => undefined);
+    }
+    return;
+  }
   const { supabase } = await requireUser();
   const { error } = await supabase
     .from('live_streams')
@@ -279,12 +287,14 @@ export async function performLiveStageAction(
     | 'invite'
     | 'accept_invite'
     | 'decline_invite'
+    | 'leave'
     | 'approve'
     | 'decline'
     | 'remove'
     | 'mute'
     | 'camera_off'
-    | 'mute_all',
+    | 'mute_all'
+    | 'end',
   targetUserId?: string,
 ): Promise<void> {
   const { supabase } = await requireUser();

@@ -15,12 +15,14 @@ type StageAction =
   | 'invite'
   | 'accept_invite'
   | 'decline_invite'
+  | 'leave'
   | 'approve'
   | 'decline'
   | 'remove'
   | 'mute'
   | 'camera_off'
-  | 'mute_all';
+  | 'mute_all'
+  | 'end';
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -36,12 +38,14 @@ function isStageAction(value: unknown): value is StageAction {
     'invite',
     'accept_invite',
     'decline_invite',
+    'leave',
     'approve',
     'decline',
     'remove',
     'mute',
     'camera_off',
     'mute_all',
+    'end',
   ].includes(String(value));
 }
 
@@ -89,6 +93,21 @@ async function updatePublishPermission(
     console.warn('Could not update the connected LiveKit participant', error);
     return false;
   }
+}
+
+async function connectedGuestCount(
+  roomService: RoomServiceClient,
+  roomName: string,
+  hostId: string,
+  excludedUserId: string,
+): Promise<number> {
+  const participants = await roomService.listParticipants(roomName);
+  return participants.filter(
+    (participant) =>
+      participant.identity !== hostId &&
+      participant.identity !== excludedUserId &&
+      participant.permission?.canPublish === true,
+  ).length;
 }
 
 Deno.serve(async (request) => {
@@ -183,7 +202,8 @@ Deno.serve(async (request) => {
     action === 'request' ||
     action === 'cancel' ||
     action === 'accept_invite' ||
-    action === 'decline_invite'
+    action === 'decline_invite' ||
+    action === 'leave'
   ) {
     if (isHost) {
       return json({ error: 'The host is already on stage' }, 409);
@@ -202,16 +222,13 @@ Deno.serve(async (request) => {
       return json({ error: 'This stage invitation is no longer active' }, 409);
     }
     if (action === 'accept_invite') {
-      const { count, error: countError } = await admin
-        .from('live_stage_requests')
-        .select('id', { count: 'exact', head: true })
-        .eq('stream_id', streamId)
-        .eq('status', 'approved')
-        .neq('user_id', userId);
-      if (countError) {
-        return json({ error: countError.message }, 500);
-      }
-      if ((count ?? 0) >= 3) {
+      const guestCount = await connectedGuestCount(
+        roomService,
+        stream.room_name,
+        stream.host_id,
+        userId,
+      );
+      if (guestCount >= 3) {
         return json({ error: 'The guest stage is currently full' }, 409);
       }
     }
@@ -224,6 +241,8 @@ Deno.serve(async (request) => {
           ? 'approved'
           : action === 'decline_invite'
             ? 'declined'
+            : action === 'leave'
+              ? 'removed'
             : 'cancelled';
     const { error } = await admin.from('live_stage_requests').upsert(
       {
@@ -246,11 +265,44 @@ Deno.serve(async (request) => {
       );
       return json({ status, participantUpdated });
     }
+    if (action === 'leave') {
+      const participantUpdated = await updatePublishPermission(
+        roomService,
+        stream.room_name,
+        userId,
+        false,
+      );
+      return json({ status, participantUpdated });
+    }
     return json({ status });
   }
 
   if (!isHost) {
     return json({ error: 'Only the host can manage the stage' }, 403);
+  }
+  if (action === 'end') {
+    const { error: endError } = await admin
+      .from('live_streams')
+      .update({ status: 'ended', viewer_count: 0 })
+      .eq('id', streamId)
+      .eq('host_id', userId);
+    if (endError) {
+      return json({ error: endError.message }, 500);
+    }
+    const { error: stageError } = await admin
+      .from('live_stage_requests')
+      .update({ status: 'removed' })
+      .eq('stream_id', streamId)
+      .in('status', ['pending', 'invited', 'approved']);
+    if (stageError) {
+      console.warn('Could not clear the ended live stage', stageError);
+    }
+    try {
+      await roomService.deleteRoom(stream.room_name);
+    } catch (error) {
+      console.warn('Could not close the LiveKit room after ending the study', error);
+    }
+    return json({ status: 'ended' });
   }
   if (action === 'mute_all') {
     try {
@@ -347,16 +399,13 @@ Deno.serve(async (request) => {
   }
 
   if (action === 'approve') {
-    const { count, error: countError } = await admin
-      .from('live_stage_requests')
-      .select('id', { count: 'exact', head: true })
-      .eq('stream_id', streamId)
-      .eq('status', 'approved')
-      .neq('user_id', targetUserId);
-    if (countError) {
-      return json({ error: countError.message }, 500);
-    }
-    if ((count ?? 0) >= 3) {
+    const guestCount = await connectedGuestCount(
+      roomService,
+      stream.room_name,
+      stream.host_id,
+      targetUserId,
+    );
+    if (guestCount >= 3) {
       return json({ error: 'The stage already has the maximum of three guests' }, 409);
     }
   }
