@@ -6,6 +6,7 @@ import { SettingsScreen } from '@/screens/profile/SettingsScreen';
 import { CommunityPointsScreen } from '@/screens/profile/CommunityPointsScreen';
 import { BlockedUsersScreen } from '@/screens/profile/BlockedUsersScreen';
 import { ModerationScreen } from '@/screens/profile/ModerationScreen';
+import { NotificationSettingsScreen } from '@/screens/profile/NotificationSettingsScreen';
 import { useTheme } from '@/context/ThemeProvider';
 import { palette } from '@/constants/colors';
 
@@ -29,6 +30,11 @@ export function ProfileStack() {
       />
       <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: 'Edit profile' }} />
       <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
+      <Stack.Screen
+        name="NotificationSettings"
+        component={NotificationSettingsScreen}
+        options={{ title: 'Notifications' }}
+      />
       <Stack.Screen
         name="BlockedUsers"
         component={BlockedUsersScreen}

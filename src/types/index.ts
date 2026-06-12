@@ -46,7 +46,8 @@ export type ActivityEventKind =
   | 'prayer_support'
   | 'stage_invitation'
   | 'stage_update'
-  | 'points';
+  | 'points'
+  | 'live_reminder';
 
 export type ActivityEvent = {
   id: string;
@@ -126,6 +127,13 @@ export type UserSanction = {
   reason: string;
   endsAt?: string;
   createdAt: string;
+};
+
+export type NotificationPreferences = {
+  live: boolean;
+  community: boolean;
+  prayer: boolean;
+  points: boolean;
 };
 
 export type LiveStreamStatus = 'scheduled' | 'live' | 'ended';

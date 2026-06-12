@@ -8,8 +8,14 @@ import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/context/AuthProvider';
 import { config, isConfiguredPublicUrl } from '@/constants/config';
 import { palette } from '@/constants/colors';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { ProfileStackParamList } from '@/navigation/types';
+
+type Nav = NativeStackNavigationProp<ProfileStackParamList, 'Settings'>;
 
 export function SettingsScreen() {
+  const navigation = useNavigation<Nav>();
   const { deleteAccount } = useAuth();
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,6 +78,25 @@ export function SettingsScreen() {
           ))}
         </View>
       ) : null}
+
+      <View className="mt-6 rounded-2xl border border-border overflow-hidden bg-surface-elevated/80">
+        <Pressable
+          className="flex-row items-center gap-3 px-4 py-4"
+          accessibilityRole="button"
+          onPress={() => navigation.navigate('NotificationSettings')}
+        >
+          <View className="w-10 h-10 rounded-xl bg-brand/10 items-center justify-center">
+            <Ionicons name="notifications-outline" size={20} color={palette.brand} />
+          </View>
+          <View className="flex-1">
+            <Text className="font-semibold">Notifications</Text>
+            <Text variant="caption" className="mt-1">
+              Live, community, prayer, and points preferences
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={palette.muted} />
+        </Pressable>
+      </View>
 
       <View className="mt-8">
         <Text variant="subtitle">Account</Text>

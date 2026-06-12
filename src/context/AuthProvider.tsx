@@ -25,6 +25,7 @@ import {
   updateUserProfile,
 } from '@/services/auth/authService';
 import { getAccountRestrictionMessage } from '@/utils/auth';
+import { unregisterPushNotifications } from '@/services/notifications/notificationService';
 
 type AuthContextValue = {
   session: AuthSession | null;
@@ -176,12 +177,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    await unregisterPushNotifications().catch(() => undefined);
     await authSignOut();
     setSession(null);
     setIsPasswordRecovery(false);
   }, []);
 
   const deleteAccount = useCallback(async () => {
+    await unregisterPushNotifications().catch(() => undefined);
     const error = await deleteUserAccount();
     if (!error) {
       setSession(null);

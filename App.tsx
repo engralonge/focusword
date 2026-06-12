@@ -16,6 +16,7 @@ import { RootNavigator } from '@/navigation/RootNavigator';
 import type { RootStackParamList } from '@/navigation/types';
 import { palette } from '@/constants/colors';
 import { AppErrorBoundary } from '@/components/common/AppErrorBoundary';
+import { PushNotificationManager } from '@/components/notifications/PushNotificationManager';
 
 const darkNavTheme = {
   ...DarkTheme,
@@ -75,6 +76,9 @@ const linking: LinkingOptions<RootStackParamList> = {
               CommunityPoints: 'profile/points',
               EditProfile: 'profile/edit',
               Settings: 'profile/settings',
+              NotificationSettings: 'profile/notifications',
+              BlockedUsers: 'profile/blocked',
+              Moderation: 'profile/moderation',
             },
           },
         },
@@ -119,6 +123,7 @@ function AppContent() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <NavigationContainer linking={linking} theme={isDark ? darkNavTheme : lightNavTheme}>
         <StatusBar style="light" />
+        <PushNotificationManager />
         <RootNavigator />
       </NavigationContainer>
     </GestureHandlerRootView>

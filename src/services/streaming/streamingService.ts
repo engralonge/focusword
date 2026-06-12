@@ -574,13 +574,13 @@ export function subscribeToLiveMessages(
 
 export async function saveReminder(
   streamId: string,
-  notificationId: string,
+  notificationId?: string,
 ): Promise<void> {
   const { supabase, user } = await requireUser();
   const { error } = await supabase.from('live_reminders').upsert({
     stream_id: streamId,
     user_id: user.id,
-    notification_id: notificationId,
+    notification_id: notificationId ?? null,
   });
   if (error) {
     throw new Error(error.message);

@@ -97,6 +97,9 @@ On physical iOS and Android devices, verify:
 - content and account reporting, two-way block visibility, anonymous-prayer identity
   protection, moderator queue decisions, suspension/ban enforcement, sanction reversal,
   and immutable moderation audit history;
+- push permission and token registration on physical devices, notification preference
+  categories, foreground delivery, deep-link opening, token removal on sign-out, server
+  reminders, and delivery status in `public.notification_deliveries`;
 - prayer progress updates, answered testimonies, anonymity, and timeline ownership policies;
 - Focus Mode consent, foreground-only time credit, interruption tracking, session recovery,
   and Android/iOS system-settings links;
@@ -133,3 +136,6 @@ eas submit --platform all --profile production
 
 The project requires a development or production build for LiveKit. Expo Go is not
 supported for live video.
+
+Remote push notifications also require a development or production build. Confirm that
+Android FCM and iOS APNs credentials are configured in EAS before store submission.

@@ -21,6 +21,7 @@ const icons: Record<ActivityEvent['kind'], keyof typeof Ionicons.glyphMap> = {
   stage_invitation: 'videocam-outline',
   stage_update: 'radio-outline',
   points: 'sparkles-outline',
+  live_reminder: 'alarm-outline',
 };
 
 export function ActivityInboxScreen() {
