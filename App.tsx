@@ -6,6 +6,7 @@ import {
   type LinkingOptions,
 } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
+import { useKeepAwake } from 'expo-keep-awake';
 import * as Linking from 'expo-linking';
 import * as Notifications from 'expo-notifications';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -112,6 +113,7 @@ const linking: LinkingOptions<RootStackParamList> = {
 
 function AppContent() {
   const { isDark } = useTheme();
+  useKeepAwake('citizens-bible-community-app');
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
