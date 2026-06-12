@@ -7,6 +7,7 @@ import type { LiveRoomParticipant } from '@/types';
 type Props = {
   serverUrl: string;
   token: string;
+  hostId: string;
   isHost: boolean;
   canPublish: boolean;
   compact?: boolean;

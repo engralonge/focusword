@@ -31,6 +31,7 @@ type MediaPermissionState = {
 type Props = {
   serverUrl: string;
   token: string;
+  hostId: string;
   isHost: boolean;
   canPublish: boolean;
   compact?: boolean;
@@ -87,6 +88,7 @@ async function requestMediaPermission(kind: MediaPermission) {
 
 function RoomContent({
   isHost,
+  hostId,
   canPublish,
   compact,
   initialPermissions,
@@ -97,6 +99,7 @@ function RoomContent({
 }: Pick<
   Props,
   | 'isHost'
+  | 'hostId'
   | 'canPublish'
   | 'compact'
   | 'onParticipantCount'
@@ -195,16 +198,19 @@ function RoomContent({
     }
   };
 
-  const visibleTracks = cameraTracks
-    .filter((track, index, tracks) =>
-      tracks.findIndex(
-        (item) =>
-          item.participant.identity === track.participant.identity &&
-          item.source === track.source,
-      ) === index,
+  const stageParticipants = [...participants]
+    .filter(
+      (participant) =>
+        participant.identity === hostId ||
+        participant.permissions?.canPublish === true,
     )
+    .sort((left, right) => {
+      if (left.identity === hostId) return -1;
+      if (right.identity === hostId) return 1;
+      return (left.joinedAt?.getTime() ?? 0) - (right.joinedAt?.getTime() ?? 0);
+    })
     .slice(0, 4);
-  const isGrid = visibleTracks.length > 1;
+  const isGrid = stageParticipants.length > 1;
 
   return (
     <View
@@ -216,24 +222,57 @@ function RoomContent({
             : 'aspect-video'
       }`}
     >
-      {visibleTracks.length ? (
-        visibleTracks.map((track) => (
-          <View
-            key={`${track.participant.identity}:${track.source}`}
-            style={{
-              width: isGrid ? '50%' : '100%',
-              height: isGrid ? '50%' : '100%',
-            }}
-            className="border border-black"
-          >
-            <VideoTrack trackRef={track} style={{ flex: 1 }} objectFit="cover" />
-            <View className="absolute left-2 bottom-2 max-w-[80%] rounded-full bg-black/70 px-3 py-1">
-              <Text variant="caption" numberOfLines={1} className="text-white">
-                {track.participant.name || 'Guest'}
-              </Text>
+      {stageParticipants.length ? (
+        stageParticipants.map((participant) => {
+          const cameraTrack = cameraTracks.find(
+            (track) => track.participant.identity === participant.identity,
+          );
+          const displayName = participant.name?.trim() || 'Community member';
+          const role = participant.identity === hostId ? 'Host' : 'Guest';
+
+          return (
+            <View
+              key={participant.identity}
+              style={{
+                width: isGrid ? '50%' : '100%',
+                height: isGrid ? '50%' : '100%',
+              }}
+              className="border border-black bg-black"
+            >
+              {cameraTrack && participant.isCameraEnabled ? (
+                <VideoTrack
+                  trackRef={cameraTrack}
+                  style={{ flex: 1 }}
+                  objectFit="cover"
+                />
+              ) : (
+                <View className="flex-1 items-center justify-center px-4 bg-neutral-950">
+                  <View className="w-14 h-14 rounded-full bg-white/10 items-center justify-center">
+                    <Text className="text-white text-xl font-semibold">
+                      {displayName.charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name="videocam-off-outline"
+                    size={18}
+                    color={palette.muted}
+                    style={{ marginTop: 10 }}
+                  />
+                </View>
+              )}
+              <View className="absolute left-2 top-2 max-w-[80%] rounded-md bg-black/75 px-2 py-1">
+                <Text variant="caption" numberOfLines={1} className="text-white">
+                  {displayName} · {role}
+                </Text>
+              </View>
+              {!participant.isMicrophoneEnabled ? (
+                <View className="absolute right-2 top-2 w-7 h-7 rounded-full bg-black/75 items-center justify-center">
+                  <Ionicons name="mic-off" size={15} color="white" />
+                </View>
+              ) : null}
             </View>
-          </View>
-        ))
+          );
+        })
       ) : (
         <View className="flex-1 items-center justify-center px-6">
           <Ionicons name="videocam-off-outline" size={34} color={palette.muted} />
@@ -374,6 +413,7 @@ export function LiveRoomView(props: Props) {
     >
       <RoomContent
         isHost={props.isHost}
+        hostId={props.hostId}
         canPublish={props.canPublish}
         compact={props.compact}
         initialPermissions={initialPermissions}

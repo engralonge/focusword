@@ -350,6 +350,7 @@ export function LiveStreamScreen() {
             key={credentials.token}
             serverUrl={credentials.serverUrl}
             token={credentials.token}
+            hostId={stream.hostId}
             isHost={credentials.isHost}
             canPublish={credentials.canPublish}
             compact={videoPinned}
