@@ -93,6 +93,13 @@ On physical iOS and Android devices, verify:
   consent-based host invitations, speaking queue, individual and mute-all controls,
   synchronized live Scripture, translation changes, verse focus, shared AI insight,
   chat, reminders, deep links, participant counts, and room completion;
+- brief Wi-Fi/mobile-data interruptions recover without leaving the live screen, a failed
+  recovery presents the Rejoin action, and returning after five minutes in the background
+  refreshes room credentials;
+- ending a study removes every attendee within ten seconds even if realtime delivery is
+  delayed, and retrying the host end action remains successful;
+- LiveKit token/stage logs include `requestId`, `streamId`, action, and outcome fields, while
+  repeated client errors are deduplicated in `public.app_error_events`;
 - dark/light themes, offline fallback passages, screen-reader labels, and small screens.
 
 Local Android compilation additionally requires a JDK and Android SDK. When those are not

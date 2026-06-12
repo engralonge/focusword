@@ -17,7 +17,7 @@ import {
   useTracks,
 } from '@livekit/react-native';
 import { permissions } from '@livekit/react-native-webrtc';
-import { Track } from 'livekit-client';
+import { ConnectionState, RoomEvent, Track } from 'livekit-client';
 import { Text } from '@/components/ui/Text';
 import { palette } from '@/constants/colors';
 import type { LiveRoomParticipant } from '@/types';
@@ -38,6 +38,8 @@ type Props = {
   onParticipantCount: (count: number) => void;
   onParticipantsChange: (participants: LiveRoomParticipant[]) => void;
   onLeave: () => void;
+  onReconnect: () => void;
+  onConnected: () => void;
   onError: (message: string) => void;
 };
 
@@ -95,6 +97,8 @@ function RoomContent({
   onParticipantCount,
   onParticipantsChange,
   onLeave,
+  onReconnect,
+  onConnected,
   onError,
 }: Pick<
   Props,
@@ -105,6 +109,8 @@ function RoomContent({
   | 'onParticipantCount'
   | 'onParticipantsChange'
   | 'onLeave'
+  | 'onReconnect'
+  | 'onConnected'
   | 'onError'
 > & {
   initialPermissions: MediaPermissionState;
@@ -112,12 +118,32 @@ function RoomContent({
   const room = useRoomContext();
   const participants = useParticipants();
   const cameraTracks = useTracks([Track.Source.Camera]);
+  const [connectionState, setConnectionState] = useState<ConnectionState>(
+    ConnectionState.Connecting,
+  );
+  const [connectionStarted, setConnectionStarted] = useState(false);
   const [cameraEnabled, setCameraEnabled] = useState(
     isHost && initialPermissions.camera,
   );
   const [microphoneEnabled, setMicrophoneEnabled] = useState(
     isHost && initialPermissions.microphone,
   );
+
+  useEffect(() => {
+    const handleConnectionChange = (state: ConnectionState) => {
+      setConnectionState(state);
+      if (state !== ConnectionState.Disconnected) {
+        setConnectionStarted(true);
+      }
+      if (state === ConnectionState.Connected) {
+        onConnected();
+      }
+    };
+    room.on(RoomEvent.ConnectionStateChanged, handleConnectionChange);
+    return () => {
+      room.off(RoomEvent.ConnectionStateChanged, handleConnectionChange);
+    };
+  }, [onConnected, room]);
 
   useEffect(() => {
     onParticipantCount(participants.length);
@@ -326,6 +352,35 @@ function RoomContent({
           <Ionicons name="call" size={22} color="white" style={{ transform: [{ rotate: '135deg' }] }} />
         </Pressable>
       )}
+      {connectionState === ConnectionState.Reconnecting ||
+      connectionState === ConnectionState.SignalReconnecting ? (
+        <View className="absolute left-3 right-3 top-3 rounded-md bg-black/80 px-3 py-2">
+          <Text variant="caption" className="text-center text-white">
+            Connection interrupted. Rejoining...
+          </Text>
+        </View>
+      ) : null}
+      {connectionStarted && connectionState === ConnectionState.Disconnected ? (
+        <View className="absolute inset-0 items-center justify-center bg-black/90 px-6">
+          <Ionicons name="cloud-offline-outline" size={30} color={palette.brandMuted} />
+          <Text variant="label" className="mt-3 text-center text-white">
+            The live connection was lost.
+          </Text>
+          <Text variant="caption" className="mt-1 text-center">
+            Check your internet connection, then try to rejoin.
+          </Text>
+          <Pressable
+            className="mt-4 min-h-11 rounded-lg bg-brand px-5 items-center justify-center"
+            accessibilityRole="button"
+            accessibilityLabel="Rejoin live study"
+            onPress={onReconnect}
+          >
+            <Text variant="label" className="text-background">
+              Rejoin
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -385,7 +440,7 @@ export function LiveRoomView(props: Props) {
     };
   }, [props.canPublish, props.isHost, props.onError]);
 
-  const handleRoomExit = useCallback(() => {
+  const handleUserLeave = useCallback(() => {
     if (leaveHandled.current) {
       return;
     }
@@ -411,7 +466,7 @@ export function LiveRoomView(props: Props) {
       connect
       audio={props.isHost && initialPermissions.microphone}
       video={props.isHost && initialPermissions.camera}
-      onDisconnected={handleRoomExit}
+      onConnected={props.onConnected}
       onError={(error) => props.onError(error.message)}
       onMediaDeviceFailure={(failure) =>
         props.onError(
@@ -429,7 +484,9 @@ export function LiveRoomView(props: Props) {
         initialPermissions={initialPermissions}
         onParticipantCount={props.onParticipantCount}
         onParticipantsChange={props.onParticipantsChange}
-        onLeave={handleRoomExit}
+        onLeave={handleUserLeave}
+        onReconnect={props.onReconnect}
+        onConnected={props.onConnected}
         onError={props.onError}
       />
     </LiveKitRoom>

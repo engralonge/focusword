@@ -31,6 +31,14 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
+function logEvent(
+  level: 'info' | 'warn' | 'error',
+  event: string,
+  fields: Record<string, unknown>,
+) {
+  console[level](JSON.stringify({ event, ...fields }));
+}
+
 function isStageAction(value: unknown): value is StageAction {
   return [
     'request',
@@ -111,6 +119,7 @@ async function connectedGuestCount(
 }
 
 Deno.serve(async (request) => {
+  const requestId = crypto.randomUUID();
   if (request.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -144,6 +153,7 @@ Deno.serve(async (request) => {
     !livekitApiKey ||
     !livekitApiSecret
   ) {
+    logEvent('error', 'livekit_stage_not_configured', { requestId });
     return json({ error: 'Live stage is not configured' }, 503);
   }
 
@@ -186,12 +196,27 @@ Deno.serve(async (request) => {
   if (streamError || !stream) {
     return json({ error: 'Live study not found' }, 404);
   }
-  if (stream.status !== 'live') {
-    return json({ error: 'The live study is not currently live' }, 409);
-  }
-
   const userId = userData.user.id;
   const isHost = stream.host_id === userId;
+  if (stream.status !== 'live') {
+    if (action === 'end' && isHost && stream.status === 'ended') {
+      logEvent('info', 'livekit_stage_end_already_completed', {
+        requestId,
+        streamId,
+        userId,
+      });
+      return json({ status: 'ended', requestId });
+    }
+    return json({ error: 'The live study is not currently live' }, 409);
+  }
+  logEvent('info', 'livekit_stage_action_started', {
+    requestId,
+    streamId,
+    action,
+    userId,
+    targetUserId: targetUserId || null,
+    isHost,
+  });
   const roomService = new RoomServiceClient(
     livekitUrl.replace(/^wss:/, 'https:').replace(/^ws:/, 'http:'),
     livekitApiKey,
@@ -254,6 +279,13 @@ Deno.serve(async (request) => {
       { onConflict: 'stream_id,user_id' },
     );
     if (error) {
+      logEvent('error', 'livekit_stage_request_failed', {
+        requestId,
+        streamId,
+        action,
+        userId,
+        message: error.message,
+      });
       return json({ error: error.message }, 500);
     }
     if (action === 'accept_invite') {
@@ -263,7 +295,15 @@ Deno.serve(async (request) => {
         userId,
         true,
       );
-      return json({ status, participantUpdated });
+      logEvent('info', 'livekit_stage_action_completed', {
+        requestId,
+        streamId,
+        action,
+        userId,
+        status,
+        participantUpdated,
+      });
+      return json({ status, participantUpdated, requestId });
     }
     if (action === 'leave') {
       const participantUpdated = await updatePublishPermission(
@@ -272,9 +312,17 @@ Deno.serve(async (request) => {
         userId,
         false,
       );
-      return json({ status, participantUpdated });
+      logEvent('info', 'livekit_stage_action_completed', {
+        requestId,
+        streamId,
+        action,
+        userId,
+        status,
+        participantUpdated,
+      });
+      return json({ status, participantUpdated, requestId });
     }
-    return json({ status });
+    return json({ status, requestId });
   }
 
   if (!isHost) {
@@ -300,9 +348,20 @@ Deno.serve(async (request) => {
     try {
       await roomService.deleteRoom(stream.room_name);
     } catch (error) {
-      console.warn('Could not close the LiveKit room after ending the study', error);
+      logEvent('warn', 'livekit_room_delete_failed', {
+        requestId,
+        streamId,
+        message: error instanceof Error ? error.message : String(error),
+      });
     }
-    return json({ status: 'ended' });
+    logEvent('info', 'livekit_stage_action_completed', {
+      requestId,
+      streamId,
+      action,
+      userId,
+      status: 'ended',
+    });
+    return json({ status: 'ended', requestId });
   }
   if (action === 'mute_all') {
     try {
@@ -329,7 +388,11 @@ Deno.serve(async (request) => {
       );
       return json({ mutedCount: microphoneTracks.length });
     } catch (error) {
-      console.error('Could not mute the guest stage', error);
+      logEvent('error', 'livekit_mute_all_failed', {
+        requestId,
+        streamId,
+        message: error instanceof Error ? error.message : String(error),
+      });
       return json({ error: 'Could not mute the guest stage' }, 502);
     }
   }
@@ -393,7 +456,13 @@ Deno.serve(async (request) => {
       return json({ mutedCount: 1 });
     } catch (error) {
       const device = action === 'mute' ? 'microphone' : 'camera';
-      console.error(`Could not turn off participant ${device}`, error);
+      logEvent('error', 'livekit_guest_media_control_failed', {
+        requestId,
+        streamId,
+        targetUserId,
+        device,
+        message: error instanceof Error ? error.message : String(error),
+      });
       return json({ error: `Could not turn off this participant's ${device}` }, 502);
     }
   }
@@ -427,5 +496,14 @@ Deno.serve(async (request) => {
     action === 'approve',
   );
 
-  return json({ status: nextStatus, participantUpdated });
+  logEvent('info', 'livekit_stage_action_completed', {
+    requestId,
+    streamId,
+    action,
+    userId,
+    targetUserId,
+    status: nextStatus,
+    participantUpdated,
+  });
+  return json({ status: nextStatus, participantUpdated, requestId });
 });

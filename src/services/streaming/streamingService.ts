@@ -9,6 +9,7 @@ import type {
 } from '@/types';
 import type { BibleTranslation } from '@/types/bible';
 import { getSupabaseClient } from '@/services/supabase/client';
+import { getFunctionErrorMessage } from '@/services/supabase/functionError';
 import { validateLiveStudy } from '@/utils/live';
 
 async function requireUser() {
@@ -99,8 +100,59 @@ export async function fetchLiveStreams(): Promise<LiveStream[]> {
 }
 
 export async function fetchStreamById(id: string): Promise<LiveStream | null> {
-  const streams = await fetchLiveStreams();
-  return streams.find((stream) => stream.id === id) ?? null;
+  const { supabase, user } = await requireUser();
+  const { data: row, error } = await supabase
+    .from('live_streams')
+    .select(
+      'id, title, description, host_id, room_name, status, viewer_count, scheduled_at, created_at, updated_at, recording_requested',
+    )
+    .eq('id', id)
+    .maybeSingle();
+  if (error) {
+    throw new Error(error.message);
+  }
+  if (!row) {
+    return null;
+  }
+
+  const [names, reminder, recording] = await Promise.all([
+    profileNames(supabase, [row.host_id]),
+    supabase
+      .from('live_reminders')
+      .select('stream_id')
+      .eq('stream_id', id)
+      .eq('user_id', user.id)
+      .maybeSingle(),
+    supabase
+      .from('live_recording_statuses')
+      .select('status')
+      .eq('stream_id', id)
+      .maybeSingle(),
+  ]);
+  if (reminder.error) {
+    throw new Error(reminder.error.message);
+  }
+  if (recording.error) {
+    throw new Error(recording.error.message);
+  }
+
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description ?? undefined,
+    hostId: row.host_id,
+    hostName: names.get(row.host_id) ?? 'Host',
+    roomName: row.room_name,
+    status: row.status as LiveStreamStatus,
+    viewerCount: row.viewer_count ?? 0,
+    scheduledAt: row.scheduled_at ?? undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    isHost: row.host_id === user.id,
+    reminderSet: Boolean(reminder.data),
+    recordingRequested: Boolean(row.recording_requested),
+    recordingStatus: recording.data?.status as LiveStream['recordingStatus'],
+  };
 }
 
 export async function createLiveStream(input: {
@@ -143,8 +195,8 @@ export async function updateStreamStatus(
   status: LiveStreamStatus,
 ): Promise<void> {
   if (status === 'ended') {
-    await performLiveStageAction(streamId, 'end');
     const stream = await fetchStreamById(streamId);
+    await performLiveStageAction(streamId, 'end');
     if (stream?.recordingRequested) {
       void manageLiveRecording(streamId, 'stop').catch(() => undefined);
     }
@@ -175,7 +227,13 @@ async function manageLiveRecording(
     { body: { streamId, action } },
   );
   if (error || data?.error) {
-    throw new Error(data?.error ?? error?.message ?? 'Could not update recording.');
+    throw new Error(
+      await getFunctionErrorMessage(
+        error,
+        data?.error,
+        'Could not update recording.',
+      ),
+    );
   }
 }
 
@@ -244,7 +302,13 @@ export async function getLiveKitCredentials(streamId: string): Promise<{
     error?: string;
   }>('livekit-token', { body: { streamId } });
   if (error || !data?.serverUrl || !data.token) {
-    throw new Error(data?.error ?? error?.message ?? 'Could not join the live room.');
+    throw new Error(
+      await getFunctionErrorMessage(
+        error,
+        data?.error,
+        'Could not join the live room. Check your connection and try again.',
+      ),
+    );
   }
   return {
     serverUrl: data.serverUrl,
@@ -303,8 +367,40 @@ export async function performLiveStageAction(
     { body: { streamId, action, targetUserId } },
   );
   if (error || data?.error) {
-    throw new Error(data?.error ?? error?.message ?? 'Could not update the live stage.');
+    throw new Error(
+      await getFunctionErrorMessage(
+        error,
+        data?.error,
+        'Could not update the live stage. Check your connection and try again.',
+      ),
+    );
   }
+}
+
+export function subscribeToLiveStream(
+  streamId: string,
+  onChange: () => void,
+): (() => void) | undefined {
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    return undefined;
+  }
+  const channel = supabase
+    .channel(`live-stream:${streamId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'live_streams',
+        filter: `id=eq.${streamId}`,
+      },
+      onChange,
+    )
+    .subscribe();
+  return () => {
+    void supabase.removeChannel(channel);
+  };
 }
 
 export function subscribeToLiveStage(

@@ -1,6 +1,7 @@
 import {
   getReminderDate,
   groupLiveStreams,
+  shouldRefreshLiveCredentials,
   validateLiveStudy,
 } from '@/utils/live';
 import type { LiveStream, LiveStreamStatus } from '@/types';
@@ -75,5 +76,12 @@ describe('live study domain rules', () => {
     expect(grouped.live.map((item) => item.id)).toEqual(['now']);
     expect(grouped.upcoming.map((item) => item.id)).toEqual(['sooner', 'later']);
     expect(grouped.recent).toHaveLength(10);
+  });
+
+  it('refreshes room credentials after a meaningful background period', () => {
+    const now = Date.parse('2026-06-12T12:00:00.000Z');
+    expect(shouldRefreshLiveCredentials(null, now)).toBe(false);
+    expect(shouldRefreshLiveCredentials(now - 60_000, now)).toBe(false);
+    expect(shouldRefreshLiveCredentials(now - 5 * 60_000, now)).toBe(true);
   });
 });

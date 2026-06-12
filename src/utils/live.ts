@@ -4,6 +4,7 @@ export const LIVE_TITLE_MIN_LENGTH = 3;
 export const LIVE_TITLE_MAX_LENGTH = 120;
 export const LIVE_DESCRIPTION_MAX_LENGTH = 2000;
 export const LIVE_REMINDER_LEAD_MS = 10 * 60 * 1000;
+export const LIVE_CREDENTIAL_REFRESH_AFTER_MS = 5 * 60 * 1000;
 
 export function validateLiveStudy(input: {
   title: string;
@@ -49,4 +50,14 @@ export function groupLiveStreams(streams: LiveStream[]) {
       .sort((a, b) => (a.scheduledAt ?? '').localeCompare(b.scheduledAt ?? '')),
     recent: streams.filter((stream) => stream.status === 'ended').slice(0, 10),
   };
+}
+
+export function shouldRefreshLiveCredentials(
+  backgroundedAt: number | null,
+  now = Date.now(),
+): boolean {
+  return (
+    backgroundedAt !== null &&
+    now - backgroundedAt >= LIVE_CREDENTIAL_REFRESH_AFTER_MS
+  );
 }

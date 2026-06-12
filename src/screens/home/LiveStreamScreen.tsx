@@ -1,5 +1,12 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Alert, Pressable, TextInput, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  Alert,
+  AppState,
+  Pressable,
+  TextInput,
+  View,
+  type AppStateStatus,
+} from 'react-native';
 import {
   useNavigation,
   useRoute,
@@ -31,6 +38,7 @@ import {
   sendLiveMessage,
   subscribeToLiveMessages,
   subscribeToLiveStage,
+  subscribeToLiveStream,
   updateStreamStatus,
 } from '@/services/streaming/streamingService';
 import {
@@ -38,6 +46,8 @@ import {
   scheduleLiveReminder,
 } from '@/services/notifications/notificationService';
 import { palette } from '@/constants/colors';
+import { reportError } from '@/services/observability/errorReporter';
+import { shouldRefreshLiveCredentials } from '@/utils/live';
 
 type Route = RouteProp<LiveStackParamList, 'LiveStream'>;
 type Nav = NativeStackNavigationProp<LiveStackParamList, 'LiveStream'>;
@@ -57,14 +67,44 @@ export function LiveStreamScreen() {
   const [working, setWorking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [videoPinned, setVideoPinned] = useState(false);
+  const backgroundedAt = useRef<number | null>(null);
+
+  const handleFailure = useCallback(
+    (nextError: unknown, fallback: string, operation: string) => {
+      const normalized =
+        nextError instanceof Error
+          ? nextError
+          : new Error(typeof nextError === 'string' ? nextError : fallback);
+      setError(normalized.message || fallback);
+      void reportError(normalized, {
+        feature: 'live_study',
+        operation,
+        stream_id: params.streamId,
+      });
+    },
+    [params.streamId],
+  );
+  const handleRoomConnected = useCallback(() => {
+    setError(null);
+  }, []);
+  const handleRoomError = useCallback(
+    (message: string) => {
+      handleFailure(
+        new Error(message),
+        'The live room encountered an error.',
+        'room',
+      );
+    },
+    [handleFailure],
+  );
 
   const loadMessages = useCallback(async () => {
     try {
       setMessages(await fetchLiveMessages(params.streamId));
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : 'Could not load live chat.');
+      handleFailure(nextError, 'Could not load live chat.', 'load_messages');
     }
-  }, [params.streamId]);
+  }, [handleFailure, params.streamId]);
 
   const loadStage = useCallback(async () => {
     try {
@@ -72,18 +112,18 @@ export function LiveStreamScreen() {
       setStageRequests(nextRequests);
       return nextRequests;
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : 'Could not load the live stage.');
+      handleFailure(nextError, 'Could not load the live stage.', 'load_stage');
       return undefined;
     }
-  }, [params.streamId]);
+  }, [handleFailure, params.streamId]);
 
   const refreshCredentials = useCallback(async () => {
     try {
       setCredentials(await getLiveKitCredentials(params.streamId));
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : 'Could not refresh the live room.');
+      handleFailure(nextError, 'Could not refresh the live room.', 'refresh_credentials');
     }
-  }, [params.streamId]);
+  }, [handleFailure, params.streamId]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -106,11 +146,11 @@ export function LiveStreamScreen() {
         await Promise.all([loadMessages(), loadStage()]);
       }
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : 'Could not load the live study.');
+      handleFailure(nextError, 'Could not load the live study.', 'load_stream');
     } finally {
       setLoading(false);
     }
-  }, [loadMessages, loadStage, params.streamId]);
+  }, [handleFailure, loadMessages, loadStage, params.streamId]);
 
   useEffect(() => {
     void load();
@@ -119,6 +159,35 @@ export function LiveStreamScreen() {
   useEffect(
     () => subscribeToLiveMessages(params.streamId, () => void loadMessages()),
     [loadMessages, params.streamId],
+  );
+
+  useEffect(
+    () =>
+      subscribeToLiveStream(params.streamId, () => {
+        void fetchStreamById(params.streamId)
+          .then((nextStream) => {
+            if (!nextStream) return;
+            if (nextStream.status === 'ended' && stream?.status === 'live') {
+              setStream(nextStream);
+              setCredentials(null);
+              if (!stream.isHost) {
+                navigation.goBack();
+              }
+              return;
+            }
+            setStream(nextStream);
+          })
+          .catch((nextError: unknown) =>
+            handleFailure(nextError, 'Could not refresh the live study.', 'stream_update'),
+          );
+      }),
+    [
+      handleFailure,
+      navigation,
+      params.streamId,
+      stream?.isHost,
+      stream?.status,
+    ],
   );
 
   useEffect(
@@ -153,6 +222,62 @@ export function LiveStreamScreen() {
     stream?.status,
   ]);
 
+  useEffect(() => {
+    if (stream?.status !== 'live') {
+      return undefined;
+    }
+
+    const reconcile = () => {
+      void fetchStreamById(params.streamId)
+        .then((nextStream) => {
+          if (!nextStream) return;
+          if (nextStream.status === 'ended') {
+            setStream(nextStream);
+            setCredentials(null);
+            if (!stream.isHost) {
+              navigation.goBack();
+            }
+            return;
+          }
+          setStream(nextStream);
+          void loadStage();
+        })
+        .catch((nextError: unknown) =>
+          handleFailure(nextError, 'Could not refresh the live study.', 'reconcile_stream'),
+        );
+    };
+
+    const interval = setInterval(reconcile, 10_000);
+    return () => clearInterval(interval);
+  }, [
+    handleFailure,
+    loadStage,
+    navigation,
+    params.streamId,
+    stream?.isHost,
+    stream?.status,
+  ]);
+
+  useEffect(() => {
+    const handleAppState = (nextState: AppStateStatus) => {
+      if (nextState !== 'active') {
+        backgroundedAt.current ??= Date.now();
+        return;
+      }
+      const shouldRefresh = shouldRefreshLiveCredentials(backgroundedAt.current);
+      backgroundedAt.current = null;
+      if (stream?.status !== 'live') return;
+      if (shouldRefresh) {
+        void load();
+      } else {
+        void loadStage();
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppState);
+    return () => subscription.remove();
+  }, [load, loadStage, stream?.status]);
+
   const changeStage = async (
     action:
       | 'request'
@@ -179,7 +304,7 @@ export function LiveStreamScreen() {
         await refreshCredentials();
       }
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : 'Could not update the stage.');
+      handleFailure(nextError, 'Could not update the stage.', `stage_${action}`);
     } finally {
       setWorking(false);
     }
@@ -192,7 +317,7 @@ export function LiveStreamScreen() {
       await updateStreamStatus(params.streamId, status);
       await load();
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : 'Could not update the study.');
+      handleFailure(nextError, 'Could not update the study.', `status_${status}`);
     } finally {
       setWorking(false);
     }
@@ -210,7 +335,7 @@ export function LiveStreamScreen() {
       }
       setStream({ ...stream, reminderSet: !stream.reminderSet });
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : 'Could not update the reminder.');
+      handleFailure(nextError, 'Could not update the reminder.', 'toggle_reminder');
     } finally {
       setWorking(false);
     }
@@ -224,7 +349,7 @@ export function LiveStreamScreen() {
       setDraft('');
       await loadMessages();
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : 'Could not send the message.');
+      handleFailure(nextError, 'Could not send the message.', 'send_message');
     } finally {
       setWorking(false);
     }
@@ -240,7 +365,7 @@ export function LiveStreamScreen() {
           void deleteLiveStream(params.streamId)
             .then(() => navigation.goBack())
             .catch((nextError: unknown) => {
-              setError(nextError instanceof Error ? nextError.message : 'Could not delete the study.');
+              handleFailure(nextError, 'Could not delete the study.', 'delete_stream');
             });
         },
       },
@@ -362,6 +487,8 @@ export function LiveStreamScreen() {
             compact={videoPinned}
             onParticipantCount={setParticipantCount}
             onParticipantsChange={setRoomParticipants}
+            onReconnect={() => void refreshCredentials()}
+            onConnected={handleRoomConnected}
             onLeave={() => {
               if (!stream.isHost && credentials.canPublish) {
                 void performLiveStageAction(stream.id, 'leave').finally(
@@ -371,7 +498,7 @@ export function LiveStreamScreen() {
               }
               navigation.goBack();
             }}
-            onError={setError}
+            onError={handleRoomError}
           />
         </View>
       ) : (

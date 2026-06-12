@@ -15,7 +15,16 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
+function logEvent(
+  level: 'info' | 'warn' | 'error',
+  event: string,
+  fields: Record<string, unknown>,
+) {
+  console[level](JSON.stringify({ event, ...fields }));
+}
+
 Deno.serve(async (request) => {
+  const requestId = crypto.randomUUID();
   if (request.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -41,6 +50,7 @@ Deno.serve(async (request) => {
   const livekitApiKey = Deno.env.get('LIVEKIT_API_KEY');
   const livekitApiSecret = Deno.env.get('LIVEKIT_API_SECRET');
   if (!supabaseUrl || !anonKey || !livekitUrl || !livekitApiKey || !livekitApiSecret) {
+    logEvent('error', 'livekit_token_not_configured', { requestId });
     return json({ error: 'Live streaming is not configured' }, 503);
   }
 
@@ -111,11 +121,20 @@ Deno.serve(async (request) => {
     canUpdateOwnMetadata: true,
   });
 
+  logEvent('info', 'livekit_token_issued', {
+    requestId,
+    streamId,
+    userId: userData.user.id,
+    isHost,
+    canPublish,
+    stageStatus,
+  });
   return json({
     serverUrl: livekitUrl,
     token: await token.toJwt(),
     isHost,
     canPublish,
     stageStatus,
+    requestId,
   });
 });

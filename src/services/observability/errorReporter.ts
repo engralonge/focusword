@@ -2,12 +2,32 @@ import { Platform } from 'react-native';
 import { config } from '@/constants/config';
 import { getSupabaseClient } from '@/services/supabase/client';
 
+const REPORT_COOLDOWN_MS = 60_000;
+const recentReports = new Map<string, number>();
+
 export async function reportError(
   error: Error,
   context: Record<string, string | number | boolean | null> = {},
 ): Promise<void> {
   const supabase = getSupabaseClient();
   if (!supabase) return;
+  const fingerprint = [
+    error.message,
+    context.feature ?? '',
+    context.operation ?? '',
+    context.stream_id ?? '',
+  ].join(':');
+  const now = Date.now();
+  for (const [key, reportedAt] of recentReports) {
+    if (now - reportedAt >= REPORT_COOLDOWN_MS) {
+      recentReports.delete(key);
+    }
+  }
+  const lastReportedAt = recentReports.get(fingerprint);
+  if (lastReportedAt && now - lastReportedAt < REPORT_COOLDOWN_MS) {
+    return;
+  }
+  recentReports.set(fingerprint, now);
 
   try {
     const { data } = await supabase.auth.getUser();
@@ -24,5 +44,6 @@ export async function reportError(
     });
   } catch {
     // Error reporting must never interrupt the user or recurse.
+    recentReports.delete(fingerprint);
   }
 }

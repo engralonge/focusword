@@ -14,6 +14,8 @@ type Props = {
   onParticipantCount: (count: number) => void;
   onParticipantsChange: (participants: LiveRoomParticipant[]) => void;
   onLeave: () => void;
+  onReconnect: () => void;
+  onConnected: () => void;
   onError: (message: string) => void;
 };
 
