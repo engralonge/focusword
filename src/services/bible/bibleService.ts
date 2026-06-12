@@ -7,6 +7,7 @@ import type {
   VerseSearchResult,
 } from '@/types/bible';
 import { getAllSearchableVerses, getChapterContent } from '@/services/bible/bibleContent';
+import { getKjvChapter, searchKjvVerses } from '@/services/bible/kjvBible';
 import { getWebChapter, searchWebVerses } from '@/services/bible/webBible';
 import { BIBLE_BOOKS, getBibleBook } from '@/constants/bible';
 import { getSupabaseClient } from '@/services/supabase/client';
@@ -44,6 +45,14 @@ export async function fetchChapter(
     throw new Error(`Offline WEB content is unavailable for ${book} ${chapter}.`);
   }
 
+  if (translation === 'KJV') {
+    const offline = getKjvChapter(metadata.id, metadata.name, chapter);
+    if (offline) {
+      return offline;
+    }
+    throw new Error(`Offline KJV content is unavailable for ${book} ${chapter}.`);
+  }
+
   const supabase = getSupabaseClient();
   if (supabase) {
     const { data, error } = await supabase.functions.invoke<{
@@ -74,7 +83,7 @@ export async function fetchChapter(
     return offline;
   }
   throw new Error(
-    'This translation requires an internet connection and provider access. WEB is available fully offline.',
+    'This translation requires an internet connection and provider access. WEB and KJV are available fully offline.',
   );
 }
 
@@ -120,6 +129,9 @@ export async function searchVerses(
 
   if (translation === 'WEB') {
     return searchWebVerses(q);
+  }
+  if (translation === 'KJV') {
+    return searchKjvVerses(q);
   }
 
   const supabase = getSupabaseClient();

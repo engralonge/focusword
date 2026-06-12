@@ -63,6 +63,7 @@
     "check:expo": "expo install --check",
     "export:web": "expo export --platform web",
     "generate:bible:web": "node scripts/generate-web-bible.mjs",
+    "generate:bible:kjv": "node scripts/generate-kjv-bible.mjs",
     "check": "npm run typecheck && npm run test:ci && npm run check:expo && npm run export:web",
     "build:preview:android": "eas build --platform android --profile preview",
     "build:preview:ios": "eas build --platform ios --profile preview",

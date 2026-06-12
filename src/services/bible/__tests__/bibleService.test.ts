@@ -21,11 +21,14 @@ describe('bibleService', () => {
     expect(chapter.verses.find((verse) => verse.number === 16)?.text).toContain(
       'God so loved the world',
     );
+    expect(chapter.verses).toHaveLength(36);
+    expect(chapter.source).toBe('offline');
+    expect(chapter.copyright).toContain('Public domain');
   });
 
   it('returns a clear fallback for unavailable chapters', async () => {
     await expect(fetchChapter('Genesis', 1, 'ESV')).rejects.toThrow(
-      'WEB is available fully offline',
+      'WEB and KJV are available fully offline',
     );
   });
 
