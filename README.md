@@ -17,13 +17,14 @@ Bible study live streaming app built with **React Native**, **Expo**, **NativeWi
   participation, with streaks, an append-only ledger, and daily anti-abuse caps
 - Persistent sign-in with foreground token refresh and migration from legacy secure storage
 - Activity Center inbox for replies, prayer support, live-stage invitations, and points
+- Admin-only platform health, account roles, error review, push retries, and live operations
 - Profile photo upload and display across profiles, discussions, and prayer requests
 - Muted live previews, community highlights, pinned in-room video, and explicit leave controls
 - Consent-based recorded study catalog and replay playback when LiveKit Egress is configured
 - LiveKit-powered native study rooms with moderated guest video, persistent chat, and a
   synchronized Scripture workspace for host-led passages, highlights, translations, and AI insight
 - Consent-based host invitations, speaking queue, individual guest mute, and mute-all controls
-- Scheduled studies with local reminders and notification deep links
+- Scheduled studies with server push reminders and notification deep links
 - Moderator-ready row-level security policies
 - EAS development, preview, and production build profiles
 
@@ -128,7 +129,7 @@ entire guest stage; guests always reactivate their own microphone after a host m
 and shared Scripture state are stored in Supabase with row-level
 security. The live Scripture workspace synchronizes the host's passage, translation,
 focused verse, and AI-assisted insight without storing licensed Bible text. Reminder
-notifications are scheduled locally on each attendee's device. In LiveKit Cloud, configure
+notifications are queued by Supabase and delivered through Expo Push Service. In LiveKit Cloud, configure
 the signed webhook URL as
 `https://YOUR_PROJECT.supabase.co/functions/v1/livekit-webhook` so participant counts stay
 synchronized.

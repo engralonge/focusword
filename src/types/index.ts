@@ -136,6 +136,77 @@ export type NotificationPreferences = {
   points: boolean;
 };
 
+export type AdminMetrics = {
+  members: number;
+  newMembers7d: number;
+  liveNow: number;
+  scheduledStudies: number;
+  openReports: number;
+  activeSanctions: number;
+  openErrors: number;
+  failedPushes: number;
+  enabledDevices: number;
+  posts7d: number;
+  prayers7d: number;
+};
+
+export type AdminUser = {
+  id: string;
+  displayName: string;
+  email: string;
+  role: 'member' | 'moderator' | 'admin';
+  accountStatus: 'active' | 'suspended' | 'banned';
+  suspendedUntil?: string;
+  createdAt: string;
+};
+
+export type AdminLiveStream = {
+  id: string;
+  title: string;
+  hostName: string;
+  status: 'scheduled' | 'live';
+  viewerCount: number;
+  createdAt: string;
+};
+
+export type AdminErrorEvent = {
+  id: string;
+  message: string;
+  platform: string;
+  environment: string;
+  status: 'open' | 'acknowledged' | 'resolved';
+  context: Record<string, unknown>;
+  userName: string;
+  createdAt: string;
+};
+
+export type AdminNotificationDelivery = {
+  id: string;
+  status: 'failed' | 'partial' | 'sending';
+  attemptCount: number;
+  lastError?: string;
+  title: string;
+  userName: string;
+  createdAt: string;
+};
+
+export type AdminAuditEvent = {
+  id: string;
+  action: string;
+  targetType: string;
+  details: Record<string, unknown>;
+  adminName: string;
+  createdAt: string;
+};
+
+export type AdminDashboard = {
+  metrics: AdminMetrics;
+  liveStreams: AdminLiveStream[];
+  errors: AdminErrorEvent[];
+  deliveries: AdminNotificationDelivery[];
+  audit: AdminAuditEvent[];
+};
+
 export type LiveStreamStatus = 'scheduled' | 'live' | 'ended';
 
 export type LiveStream = {

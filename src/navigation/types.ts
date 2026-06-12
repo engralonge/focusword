@@ -45,6 +45,7 @@ export type ProfileStackParamList = {
   NotificationSettings: undefined;
   BlockedUsers: undefined;
   Moderation: undefined;
+  Administration: undefined;
 };
 
 export type AuthStackParamList = {

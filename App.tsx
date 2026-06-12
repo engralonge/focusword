@@ -79,6 +79,7 @@ const linking: LinkingOptions<RootStackParamList> = {
               NotificationSettings: 'profile/notifications',
               BlockedUsers: 'profile/blocked',
               Moderation: 'profile/moderation',
+              Administration: 'profile/administration',
             },
           },
         },

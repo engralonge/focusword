@@ -7,6 +7,7 @@ import { CommunityPointsScreen } from '@/screens/profile/CommunityPointsScreen';
 import { BlockedUsersScreen } from '@/screens/profile/BlockedUsersScreen';
 import { ModerationScreen } from '@/screens/profile/ModerationScreen';
 import { NotificationSettingsScreen } from '@/screens/profile/NotificationSettingsScreen';
+import { AdminDashboardScreen } from '@/screens/profile/AdminDashboardScreen';
 import { useTheme } from '@/context/ThemeProvider';
 import { palette } from '@/constants/colors';
 
@@ -44,6 +45,11 @@ export function ProfileStack() {
         name="Moderation"
         component={ModerationScreen}
         options={{ title: 'Moderation' }}
+      />
+      <Stack.Screen
+        name="Administration"
+        component={AdminDashboardScreen}
+        options={{ title: 'Administration' }}
       />
     </Stack.Navigator>
   );

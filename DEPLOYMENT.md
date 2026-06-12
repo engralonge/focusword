@@ -31,6 +31,7 @@ supabase functions deploy bible-content
 supabase functions deploy livekit-token
 supabase functions deploy livekit-stage
 supabase functions deploy livekit-webhook --no-verify-jwt
+supabase functions deploy push-notifications --no-verify-jwt
 supabase functions deploy delete-account
 ```
 
@@ -100,6 +101,8 @@ On physical iOS and Android devices, verify:
 - push permission and token registration on physical devices, notification preference
   categories, foreground delivery, deep-link opening, token removal on sign-out, server
   reminders, and delivery status in `public.notification_deliveries`;
+- admin dashboard metrics, account search and role changes, stuck-room termination,
+  push-delivery retries, error acknowledgement, and administrative audit history;
 - prayer progress updates, answered testimonies, anonymity, and timeline ownership policies;
 - Focus Mode consent, foreground-only time credit, interruption tracking, session recovery,
   and Android/iOS system-settings links;
