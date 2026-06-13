@@ -4,7 +4,7 @@
     "slug": "focusword",
     "owner": "frankalonge",
     "scheme": "focusword",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "runtimeVersion": {
       "policy": "appVersion"
     },
@@ -31,7 +31,7 @@
       "bitcode": false
     },
     "android": {
-      "versionCode": 20,
+      "versionCode": 21,
       "adaptiveIcon": {
         "backgroundColor": "#001430",
         "foregroundImage": "./assets/android-icon-foreground.png",

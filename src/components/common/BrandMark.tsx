@@ -5,16 +5,14 @@ type Props = ViewProps & {
   size?: number;
   framed?: boolean;
   className?: string;
-  imageClassName?: string;
 };
 
-const brandMark = require('../../../assets/icon.png');
+const brandMark = require('../../../assets/brand/citizens-bible-community-in-app.jpg');
 
 export function BrandMark({
   size = 40,
   framed = false,
   className,
-  imageClassName,
   ...props
 }: Props) {
   return (
@@ -35,7 +33,6 @@ export function BrandMark({
           height: framed ? size * 0.94 : size,
           borderRadius: framed ? Math.max(8, size * 0.18) : 0,
         }}
-        {...(imageClassName ? { className: imageClassName } : {})}
         accessibilityLabel="Citizens Bible Community logo"
       />
     </View>

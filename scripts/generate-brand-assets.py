@@ -86,6 +86,13 @@ def main() -> None:
         extract_emblem(source, 512, 26),
         BRAND_DIR / "citizens-bible-community-emblem.png",
     )
+    icon.convert("RGB").resize((512, 512), Image.Resampling.LANCZOS).save(
+        BRAND_DIR / "citizens-bible-community-in-app.jpg",
+        "JPEG",
+        quality=94,
+        optimize=True,
+        progressive=False,
+    )
 
 
 if __name__ == "__main__":
