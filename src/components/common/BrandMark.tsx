@@ -8,7 +8,7 @@ type Props = ViewProps & {
   imageClassName?: string;
 };
 
-const emblem = require('../../../assets/brand/citizens-bible-community-emblem.png');
+const brandMark = require('../../../assets/icon.png');
 
 export function BrandMark({
   size = 40,
@@ -28,13 +28,14 @@ export function BrandMark({
       {...props}
     >
       <Image
-        source={emblem}
+        source={brandMark}
         resizeMode="contain"
-        className={imageClassName}
         style={{
-          width: framed ? size * 0.82 : size,
-          height: framed ? size * 0.82 : size,
+          width: framed ? size * 0.94 : size,
+          height: framed ? size * 0.94 : size,
+          borderRadius: framed ? Math.max(8, size * 0.18) : 0,
         }}
+        {...(imageClassName ? { className: imageClassName } : {})}
         accessibilityLabel="Citizens Bible Community logo"
       />
     </View>
