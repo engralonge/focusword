@@ -21,6 +21,7 @@ import { ConnectionState, RoomEvent, Track } from 'livekit-client';
 import { Text } from '@/components/ui/Text';
 import { palette } from '@/constants/colors';
 import type { LiveRoomParticipant } from '@/types';
+import { BrandMark } from '@/components/common/BrandMark';
 
 type MediaPermission = 'camera' | 'microphone';
 type MediaPermissionState = {
@@ -288,7 +289,7 @@ function RoomContent({
               )}
               <View className="absolute left-2 top-2 max-w-[80%] rounded-md bg-black/75 px-2 py-1">
                 <Text variant="caption" numberOfLines={1} className="text-white">
-                  {displayName} · {role}
+                  {displayName} | {role}
                 </Text>
               </View>
               {!participant.isMicrophoneEnabled ? (
@@ -301,12 +302,18 @@ function RoomContent({
         })
       ) : (
         <View className="flex-1 items-center justify-center px-6">
-          <Ionicons name="videocam-off-outline" size={34} color={palette.muted} />
+          <BrandMark size={62} />
           <Text variant="caption" className="text-center mt-2">
             {canPublish ? 'Your camera is off.' : 'Waiting for someone to turn on video.'}
           </Text>
         </View>
       )}
+      <View
+        pointerEvents="none"
+        className="absolute left-0 right-0 top-2 items-center opacity-75"
+      >
+        <BrandMark size={28} />
+      </View>
       {canPublish ? (
         <View className="absolute bottom-3 left-0 right-0 flex-row justify-center gap-3">
           <Pressable
@@ -362,7 +369,7 @@ function RoomContent({
       ) : null}
       {connectionStarted && connectionState === ConnectionState.Disconnected ? (
         <View className="absolute inset-0 items-center justify-center bg-black/90 px-6">
-          <Ionicons name="cloud-offline-outline" size={30} color={palette.brandMuted} />
+          <BrandMark size={58} />
           <Text variant="label" className="mt-3 text-center text-white">
             The live connection was lost.
           </Text>
@@ -451,7 +458,7 @@ export function LiveRoomView(props: Props) {
   if (!permissionsReady) {
     return (
       <View className="aspect-video bg-black rounded-lg items-center justify-center px-6">
-        <Ionicons name="shield-checkmark-outline" size={32} color={palette.brandMuted} />
+        <BrandMark size={58} />
         <Text variant="caption" className="text-center mt-3">
           Preparing camera and microphone access...
         </Text>

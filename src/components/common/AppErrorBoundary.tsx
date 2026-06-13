@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import { Button } from '@/components/ui/Button';
 import { Text } from '@/components/ui/Text';
 import { reportError } from '@/services/observability/errorReporter';
+import { BrandMark } from '@/components/common/BrandMark';
 
 type Props = { children: ReactNode };
 type State = { error: Error | null };
@@ -24,6 +25,7 @@ export class AppErrorBoundary extends Component<Props, State> {
     if (this.state.error) {
       return (
         <View className="flex-1 items-center justify-center px-6 bg-background-light dark:bg-background">
+          <BrandMark size={84} framed className="mb-6 rounded-2xl" />
           <Text variant="title" className="text-center">Citizens Bible Community needs a moment</Text>
           <Text variant="body" className="text-center mt-3">
             Something unexpected happened. The issue has been recorded securely.

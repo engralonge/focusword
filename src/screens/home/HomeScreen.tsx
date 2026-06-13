@@ -26,6 +26,7 @@ import { palette } from '@/constants/colors';
 import { Avatar } from '@/components/common/Avatar';
 import { LiveRoomPreview } from '@/components/live/LiveRoomPreview';
 import { RecordingPreview } from '@/components/live/RecordingPreview';
+import { BrandMark } from '@/components/common/BrandMark';
 
 type PreviewCredentials = Awaited<ReturnType<typeof getLiveKitCredentials>>;
 
@@ -142,7 +143,8 @@ export function HomeScreen() {
   return (
     <ScreenContainer contentClassName="px-5">
       <View className="pt-4 pb-5 flex-row items-start justify-between">
-        <View className="flex-1 pr-4">
+        <BrandMark size={44} framed className="mr-3" />
+        <View className="flex-1 pr-4 pt-0.5">
           <Text variant="label">{greeting}</Text>
           <Text variant="title" className="mt-1">{firstName}</Text>
         </View>

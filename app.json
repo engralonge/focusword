@@ -14,6 +14,11 @@
     },
     "orientation": "portrait",
     "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#001430"
+    },
     "userInterfaceStyle": "dark",
     "ios": {
       "supportsTablet": true,
@@ -26,10 +31,10 @@
       "bitcode": false
     },
     "android": {
+      "versionCode": 18,
       "adaptiveIcon": {
-        "backgroundColor": "#050608",
+        "backgroundColor": "#001430",
         "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "package": "com.focusword.app",
@@ -45,6 +50,15 @@
     "plugins": [
       "expo-secure-store",
       "expo-dev-client",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#001430",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 220,
+          "resizeMode": "contain"
+        }
+      ],
       "@livekit/react-native-expo-plugin",
       "@config-plugins/react-native-webrtc",
       [

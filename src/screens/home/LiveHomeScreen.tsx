@@ -17,6 +17,7 @@ import {
 } from '@/services/streaming/streamingService';
 import { palette } from '@/constants/colors';
 import { groupLiveStreams } from '@/utils/live';
+import { BrandMark } from '@/components/common/BrandMark';
 
 type Nav = NativeStackNavigationProp<LiveStackParamList, 'LiveHome'>;
 
@@ -59,9 +60,7 @@ export function LiveHomeScreen() {
       <ScreenContainer contentClassName="px-5">
         <Header title="Live studies" subtitle="Gather around God's Word in real time" />
         <Card className="mb-6 rounded-3xl border-brand/20 bg-brand/[0.05] p-5">
-          <View className="w-11 h-11 rounded-xl bg-brand/12 border border-brand/20 items-center justify-center mb-4">
-            <Ionicons name="radio-outline" size={22} color={palette.brandLight} />
-          </View>
+          <BrandMark size={50} framed className="mb-4" />
           <Text variant="subtitle">Your Bible study</Text>
           <Text variant="caption" className="mt-2 leading-5">
             Read, discuss, and pray together with your community.

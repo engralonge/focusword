@@ -1,8 +1,7 @@
 import { View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { Text } from '@/components/ui/Text';
-import { palette } from '@/constants/colors';
 import type { LiveRoomParticipant } from '@/types';
+import { BrandMark } from '@/components/common/BrandMark';
 
 type Props = {
   serverUrl: string;
@@ -22,7 +21,7 @@ type Props = {
 export function LiveRoomView(_props: Props) {
   return (
     <View className="aspect-video rounded-lg bg-surface items-center justify-center px-6">
-      <Ionicons name="phone-portrait-outline" size={36} color={palette.brand} />
+      <BrandMark size={72} />
       <Text variant="subtitle" className="mt-3 text-center">Open the mobile app to join</Text>
       <Text variant="caption" className="mt-2 text-center">
         Live video is available in the iOS and Android development and production builds.

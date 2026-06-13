@@ -5,6 +5,7 @@ import { Text } from '@/components/ui/Text';
 import { LiveBadge } from '@/components/live/LiveBadge';
 import type { LiveStream } from '@/types';
 import { palette } from '@/constants/colors';
+import { BrandMark } from '@/components/common/BrandMark';
 
 type Props = {
   stream: LiveStream;
@@ -28,12 +29,15 @@ export function LiveStreamCard({ stream, onPress }: Props) {
       <Card className="mb-3 border-live/20 bg-live/[0.04] p-5">
         <View className="flex-row items-start justify-between">
           <LiveBadge status={stream.status} />
-          {stream.status === 'live' ? (
-            <View className="flex-row items-center gap-1">
-              <Ionicons name="eye-outline" size={14} color={palette.muted} />
-              <Text variant="caption">{stream.viewerCount}</Text>
-            </View>
-          ) : null}
+          <View className="flex-row items-center gap-2">
+            {stream.status === 'live' ? (
+              <View className="flex-row items-center gap-1">
+                <Ionicons name="eye-outline" size={14} color={palette.muted} />
+                <Text variant="caption">{stream.viewerCount}</Text>
+              </View>
+            ) : null}
+            <BrandMark size={30} />
+          </View>
         </View>
         <Text variant="subtitle" className="mt-3">{stream.title}</Text>
         <Text variant="caption" className="mt-1">Hosted by {stream.hostName}</Text>

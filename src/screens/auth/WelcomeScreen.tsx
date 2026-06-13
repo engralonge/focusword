@@ -1,13 +1,12 @@
 import { useNavigation } from '@react-navigation/native';
 import { View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Text } from '@/components/ui/Text';
 import { Button } from '@/components/ui/Button';
 import { config } from '@/constants/config';
 import type { AuthStackParamList } from '@/navigation/types';
-import { palette } from '@/constants/colors';
+import { BrandMark } from '@/components/common/BrandMark';
 
 type Nav = NativeStackNavigationProp<AuthStackParamList, 'Welcome'>;
 
@@ -17,10 +16,7 @@ export function WelcomeScreen() {
   return (
     <ScreenContainer scroll={false} contentClassName="px-6 justify-center flex-1">
       <View className="items-center">
-        <View className="w-28 h-28 rounded-full bg-brand/10 border-2 border-brand/35 items-center justify-center mb-7">
-          <View className="absolute -inset-3 rounded-full border border-brand/15" />
-          <Ionicons name="book-outline" size={42} color={palette.brandLight} />
-        </View>
+        <BrandMark size={132} framed className="mb-7 rounded-[28px]" />
         <Text variant="label" className="mb-3">A welcoming place for faith</Text>
         <Text variant="title" className="text-center text-[32px] leading-10">
           {config.appName}

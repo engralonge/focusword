@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthProvider';
 import { Text } from '@/components/ui/Text';
 import { getConfigurationError } from '@/constants/config';
 import { palette } from '@/constants/colors';
+import { BrandMark } from '@/components/common/BrandMark';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -17,6 +18,7 @@ export function RootNavigator() {
   if (loading) {
     return (
       <View className="flex-1 items-center justify-center bg-background-light dark:bg-background">
+        <BrandMark size={92} framed className="mb-5 rounded-2xl" />
         <ActivityIndicator color={palette.brand} />
         <Text variant="caption" className="mt-3">Starting Citizens Bible Community...</Text>
       </View>

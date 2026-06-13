@@ -18,6 +18,7 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Card } from '@/components/ui/Card';
 import { Text } from '@/components/ui/Text';
 import { LiveBadge } from '@/components/live/LiveBadge';
+import { BrandMark } from '@/components/common/BrandMark';
 import { LiveRoomView } from '@/components/live/LiveRoomView';
 import { LiveBibleWorkspace } from '@/components/live/LiveBibleWorkspace';
 import { Button } from '@/components/ui/Button';
@@ -422,24 +423,27 @@ export function LiveStreamScreen() {
       <Card className="mt-2">
         <View className="flex-row items-start justify-between">
           <LiveBadge status={stream.status} />
-          {stream.isHost ? (
-            <Pressable
-              className="w-10 h-10 items-center justify-center"
-              accessibilityRole="button"
-              accessibilityLabel="Delete live study"
-              onPress={remove}
-            >
-              <Ionicons name="trash-outline" size={20} color={palette.danger} />
-            </Pressable>
-          ) : (
-            <SafetyActions
-              targetType="live_stream"
-              targetId={stream.id}
-              targetUserId={stream.hostId}
-              targetLabel={stream.hostName}
-              onError={setError}
-            />
-          )}
+          <View className="flex-row items-center gap-2">
+            <BrandMark size={34} />
+            {stream.isHost ? (
+              <Pressable
+                className="w-10 h-10 items-center justify-center"
+                accessibilityRole="button"
+                accessibilityLabel="Delete live study"
+                onPress={remove}
+              >
+                <Ionicons name="trash-outline" size={20} color={palette.danger} />
+              </Pressable>
+            ) : (
+              <SafetyActions
+                targetType="live_stream"
+                targetId={stream.id}
+                targetUserId={stream.hostId}
+                targetLabel={stream.hostName}
+                onError={setError}
+              />
+            )}
+          </View>
         </View>
         <Text variant="title" className="mt-3">{stream.title}</Text>
         <Text variant="caption" className="mt-1">Hosted by {stream.hostName}</Text>
