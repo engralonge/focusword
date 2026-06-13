@@ -9,8 +9,6 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import {
-  AudioSession,
-  LiveKitRoom,
   VideoTrack,
   useParticipants,
   useRoomContext,
@@ -22,6 +20,7 @@ import { Text } from '@/components/ui/Text';
 import { palette } from '@/constants/colors';
 import type { LiveRoomParticipant } from '@/types';
 import { BrandMark } from '@/components/common/BrandMark';
+import { ManagedLiveKitRoom } from '@/components/live/ManagedLiveKitRoom';
 
 type MediaPermission = 'camera' | 'microphone';
 type MediaPermissionState = {
@@ -218,7 +217,6 @@ function RoomContent({
     try {
       await room.localParticipant.setCameraEnabled(false);
       await room.localParticipant.setMicrophoneEnabled(false);
-      await room.disconnect();
       onLeave();
     } catch (error) {
       onError(error instanceof Error ? error.message : 'Could not leave the room.');
@@ -404,13 +402,6 @@ export function LiveRoomView(props: Props) {
   );
 
   useEffect(() => {
-    void AudioSession.startAudioSession();
-    return () => {
-      void AudioSession.stopAudioSession();
-    };
-  }, []);
-
-  useEffect(() => {
     let active = true;
 
     const prepareHostMedia = async () => {
@@ -467,12 +458,13 @@ export function LiveRoomView(props: Props) {
   }
 
   return (
-    <LiveKitRoom
+    <ManagedLiveKitRoom
       serverUrl={props.serverUrl}
       token={props.token}
       connect
       audio={props.isHost && initialPermissions.microphone}
       video={props.isHost && initialPermissions.camera}
+      manageAudioSession
       onConnected={props.onConnected}
       onError={(error) => props.onError(error.message)}
       onMediaDeviceFailure={(failure) =>
@@ -496,6 +488,6 @@ export function LiveRoomView(props: Props) {
         onConnected={props.onConnected}
         onError={props.onError}
       />
-    </LiveKitRoom>
+    </ManagedLiveKitRoom>
   );
 }

@@ -31,7 +31,7 @@
       "bitcode": false
     },
     "android": {
-      "versionCode": 18,
+      "versionCode": 19,
       "adaptiveIcon": {
         "backgroundColor": "#001430",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -59,7 +59,14 @@
           "resizeMode": "contain"
         }
       ],
-      "@livekit/react-native-expo-plugin",
+      [
+        "@livekit/react-native-expo-plugin",
+        {
+          "android": {
+            "audioType": "communication"
+          }
+        }
+      ],
       "@config-plugins/react-native-webrtc",
       [
         "expo-notifications",

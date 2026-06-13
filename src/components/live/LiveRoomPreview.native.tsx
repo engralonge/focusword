@@ -1,10 +1,11 @@
 import { View } from 'react-native';
-import { LiveKitRoom, VideoTrack, useTracks } from '@livekit/react-native';
+import { VideoTrack, useTracks } from '@livekit/react-native';
 import { Track } from 'livekit-client';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '@/components/ui/Text';
 import { palette } from '@/constants/colors';
 import { BrandMark } from '@/components/common/BrandMark';
+import { ManagedLiveKitRoom } from '@/components/live/ManagedLiveKitRoom';
 
 type Props = {
   serverUrl: string;
@@ -38,7 +39,7 @@ function PreviewTrack() {
 
 export function LiveRoomPreview({ serverUrl, token, onError }: Props) {
   return (
-    <LiveKitRoom
+    <ManagedLiveKitRoom
       serverUrl={serverUrl}
       token={token}
       connect
@@ -47,6 +48,6 @@ export function LiveRoomPreview({ serverUrl, token, onError }: Props) {
       onError={(error) => onError?.(error.message)}
     >
       <PreviewTrack />
-    </LiveKitRoom>
+    </ManagedLiveKitRoom>
   );
 }
