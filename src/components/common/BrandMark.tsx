@@ -1,4 +1,5 @@
-import { Image, View, type ViewProps } from 'react-native';
+import { View, type ViewProps } from 'react-native';
+import { Image } from 'expo-image';
 import { cn } from '@/utils/cn';
 
 type Props = ViewProps & {
@@ -27,7 +28,9 @@ export function BrandMark({
     >
       <Image
         source={brandMark}
-        resizeMode="contain"
+        contentFit="contain"
+        cachePolicy="none"
+        recyclingKey={`citizens-bible-community-${size}-${framed}`}
         style={{
           width: framed ? size * 0.94 : size,
           height: framed ? size * 0.94 : size,
