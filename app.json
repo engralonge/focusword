@@ -4,7 +4,7 @@
     "slug": "focusword",
     "owner": "frankalonge",
     "scheme": "focusword",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "runtimeVersion": {
       "policy": "appVersion"
     },
@@ -14,11 +14,6 @@
     },
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#001430"
-    },
     "userInterfaceStyle": "dark",
     "ios": {
       "supportsTablet": true,
@@ -31,7 +26,7 @@
       "bitcode": false
     },
     "android": {
-      "versionCode": 22,
+      "versionCode": 23,
       "adaptiveIcon": {
         "backgroundColor": "#001430",
         "foregroundImage": "./assets/android-icon-foreground.png",
