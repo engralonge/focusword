@@ -106,6 +106,7 @@ On physical iOS and Android devices, verify:
 - admin dashboard metrics, account search and role changes, stuck-room termination,
   push-delivery retries, error acknowledgement, and administrative audit history;
 - prayer progress updates, answered testimonies, anonymity, and timeline ownership policies;
+- prayer comments, commenter identity, owner notifications, deletion, blocking, and moderation;
 - Focus Mode consent, foreground-only time credit, interruption tracking, session recovery,
   and Android/iOS system-settings links;
 - community point awards, daily caps, streak calculations, immutable ledger behavior,

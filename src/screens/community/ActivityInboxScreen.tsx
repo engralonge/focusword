@@ -17,6 +17,7 @@ import { palette } from '@/constants/colors';
 const icons: Record<ActivityEvent['kind'], keyof typeof Ionicons.glyphMap> = {
   comment: 'chatbubble-outline',
   reaction: 'heart-outline',
+  prayer_comment: 'chatbubbles-outline',
   prayer_support: 'heart-circle-outline',
   stage_invitation: 'videocam-outline',
   stage_update: 'radio-outline',

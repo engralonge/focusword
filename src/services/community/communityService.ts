@@ -1,6 +1,7 @@
 import type {
   CommunityComment,
   CommunityPost,
+  PrayerComment,
   PrayerRequest,
   PrayerUpdate,
 } from '@/types';
@@ -216,8 +217,7 @@ export async function fetchPrayerRequests(): Promise<PrayerRequest[]> {
     return [];
   }
 
-  const [profiles, supportResult, updatesResult] = await Promise.all([
-    getProfileNames(supabase, prayers.map((prayer) => prayer.user_id)),
+  const [supportResult, updatesResult, commentsResult] = await Promise.all([
     supabase
       .from('prayer_support')
       .select('prayer_id, user_id')
@@ -228,6 +228,12 @@ export async function fetchPrayerRequests(): Promise<PrayerRequest[]> {
       .in('prayer_id', prayers.map((prayer) => prayer.id))
       .eq('status', 'published')
       .order('created_at', { ascending: true }),
+    supabase
+      .from('prayer_comments')
+      .select('id, prayer_id, user_id, body, created_at, updated_at')
+      .in('prayer_id', prayers.map((prayer) => prayer.id))
+      .eq('status', 'published')
+      .order('created_at', { ascending: true }),
   ]);
   if (supportResult.error) {
     throw new Error(supportResult.error.message);
@@ -235,6 +241,13 @@ export async function fetchPrayerRequests(): Promise<PrayerRequest[]> {
   if (updatesResult.error) {
     throw new Error(updatesResult.error.message);
   }
+  if (commentsResult.error) {
+    throw new Error(commentsResult.error.message);
+  }
+  const profiles = await getProfileNames(supabase, [
+    ...prayers.map((prayer) => prayer.user_id),
+    ...(commentsResult.data ?? []).map((comment) => comment.user_id),
+  ]);
 
   return prayers.map((prayer) => {
     const support = supportResult.data?.filter((item) => item.prayer_id === prayer.id) ?? [];
@@ -253,6 +266,19 @@ export async function fetchPrayerRequests(): Promise<PrayerRequest[]> {
       supportCount: support.length,
       supportedByMe: support.some((item) => item.user_id === user.id),
       isOwner: prayer.user_id === user.id,
+      comments: (commentsResult.data ?? [])
+        .filter((item) => item.prayer_id === prayer.id)
+        .map((item) => ({
+          id: item.id,
+          prayerId: item.prayer_id,
+          userId: item.user_id,
+          authorName: profiles.get(item.user_id)?.name ?? 'Community member',
+          authorAvatarUrl: profiles.get(item.user_id)?.avatarUrl,
+          body: item.body,
+          isOwner: item.user_id === user.id,
+          createdAt: item.created_at,
+          updatedAt: item.updated_at,
+        })),
       updates: (updatesResult.data ?? [])
         .filter((item) => item.prayer_id === prayer.id)
         .map((item) => ({
@@ -267,6 +293,30 @@ export async function fetchPrayerRequests(): Promise<PrayerRequest[]> {
       updatedAt: prayer.updated_at,
     };
   });
+}
+
+export async function createPrayerComment(prayerId: string, body: string): Promise<void> {
+  const { supabase, user } = await requireUser();
+  const trimmed = body.trim();
+  if (!trimmed || trimmed.length > 2000) {
+    throw new Error('Comments must be between 1 and 2,000 characters.');
+  }
+  const { error } = await supabase.from('prayer_comments').insert({
+    prayer_id: prayerId,
+    user_id: user.id,
+    body: trimmed,
+  });
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
+export async function deletePrayerComment(id: string): Promise<void> {
+  const { supabase } = await requireUser();
+  const { error } = await supabase.from('prayer_comments').delete().eq('id', id);
+  if (error) {
+    throw new Error(error.message);
+  }
 }
 
 export async function createPrayerUpdate(

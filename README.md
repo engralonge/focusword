@@ -11,6 +11,7 @@ Bible study live streaming app built with **React Native**, **Expo**, **NativeWi
 - Supabase email auth with verification and password recovery
 - Owned community posts, comments, reactions, prayer requests, and prayer support
 - Prayer journeys with chronological progress updates and answered-prayer testimonies
+- Prayer comments with member identity, encouragement notifications, blocking, and moderation
 - Opt-in Focus Mode with foreground study timers, interruption tracking, completion history,
   and transparent links to device quiet controls
 - Non-transferable community points for verified study, prayer, community, and live

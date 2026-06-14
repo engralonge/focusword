@@ -43,6 +43,7 @@ export type CommunityPointOverview = {
 export type ActivityEventKind =
   | 'comment'
   | 'reaction'
+  | 'prayer_comment'
   | 'prayer_support'
   | 'stage_invitation'
   | 'stage_update'
@@ -77,6 +78,7 @@ export type ReportTargetType =
   | 'community_post'
   | 'community_comment'
   | 'prayer_request'
+  | 'prayer_comment'
   | 'prayer_update'
   | 'live_stream'
   | 'live_message';
@@ -305,7 +307,20 @@ export type PrayerRequest = {
   supportCount: number;
   supportedByMe: boolean;
   isOwner: boolean;
+  comments: PrayerComment[];
   updates: PrayerUpdate[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PrayerComment = {
+  id: string;
+  prayerId: string;
+  userId: string;
+  authorName: string;
+  authorAvatarUrl?: string;
+  body: string;
+  isOwner: boolean;
   createdAt: string;
   updatedAt: string;
 };
