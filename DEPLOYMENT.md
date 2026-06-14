@@ -5,10 +5,12 @@
 1. Link the production project with the Supabase CLI.
 2. Apply all migrations in `supabase/migrations` in numeric order.
 3. Enable email verification.
-4. Add these Auth redirect URLs:
+4. Configure custom Resend SMTP using `RESEND_SMTP_SETUP.md`. Never place the
+   Resend API key in the Expo environment or source code.
+5. Add these Auth redirect URLs:
    - `focusword://auth/callback`
    - `focusword://auth/reset-password`
-5. Set server-only secrets:
+6. Set server-only secrets:
 
 ```bash
 supabase secrets set \
@@ -23,7 +25,7 @@ supabase secrets set \
   LIVEKIT_API_SECRET=...
 ```
 
-6. Deploy the functions:
+7. Deploy the functions:
 
 ```bash
 supabase functions deploy summarize-passage

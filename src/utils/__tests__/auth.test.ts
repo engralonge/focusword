@@ -1,4 +1,5 @@
 import {
+  getAuthErrorMessage,
   getAccountRestrictionMessage,
   normalizeEmail,
   validateEmail,
@@ -28,6 +29,13 @@ describe('auth domain validation', () => {
     expect(validateProfile('A')).toContain('between 2 and 80');
     expect(validateProfile('Reader', 'A'.repeat(281))).toContain('280');
     expect(validateProfile('Reader', 'Learning together.')).toBeNull();
+  });
+
+  it('maps Supabase auth codes to helpful messages', () => {
+    expect(getAuthErrorMessage('email_not_confirmed', 'fallback')).toContain('Confirm');
+    expect(getAuthErrorMessage('over_email_send_rate_limit', 'fallback')).toContain('wait');
+    expect(getAuthErrorMessage('invalid_credentials', 'fallback')).toContain('incorrect');
+    expect(getAuthErrorMessage('unknown', 'fallback')).toBe('fallback');
   });
 
   it('describes active account sanctions', () => {

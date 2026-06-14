@@ -16,6 +16,7 @@ import {
   handleAuthCallback,
   onAuthStateChange,
   requestPasswordReset,
+  resendSignupConfirmation,
   signInWithEmail,
   signUpWithEmail,
   signOut as authSignOut,
@@ -33,6 +34,7 @@ type AuthContextValue = {
   isPasswordRecovery: boolean;
   signIn: (email: string, password: string) => Promise<string | null>;
   signUp: (displayName: string, email: string, password: string) => Promise<string | null>;
+  resendConfirmation: (email: string) => Promise<string | null>;
   resetPassword: (email: string) => Promise<string | null>;
   setNewPassword: (password: string) => Promise<string | null>;
   updateProfile: (displayName: string, bio: string) => Promise<string | null>;
@@ -150,6 +152,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const resendConfirmation = useCallback(
+    async (email: string) => resendSignupConfirmation(email),
+    [],
+  );
+
   const setNewPassword = useCallback(async (password: string) => {
     const error = await updatePassword(password);
     if (!error) {
@@ -200,6 +207,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isPasswordRecovery,
       signIn,
       signUp,
+      resendConfirmation,
       resetPassword,
       setNewPassword,
       updateProfile,
@@ -213,6 +221,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isPasswordRecovery,
       signIn,
       signUp,
+      resendConfirmation,
       resetPassword,
       setNewPassword,
       updateProfile,

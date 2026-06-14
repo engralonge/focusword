@@ -37,6 +37,30 @@ export function validateProfile(displayName: string, bio = ''): string | null {
   return null;
 }
 
+export function getAuthErrorMessage(
+  code: string | undefined,
+  fallback: string,
+): string {
+  switch (code) {
+    case 'email_not_confirmed':
+      return 'Confirm your email address before signing in.';
+    case 'over_email_send_rate_limit':
+      return 'Too many confirmation emails were requested. Please wait a few minutes and try again.';
+    case 'over_request_rate_limit':
+      return 'Too many requests were made. Please wait a few minutes and try again.';
+    case 'email_address_not_authorized':
+      return 'Email delivery is not configured for this address. Please contact support.';
+    case 'email_address_invalid':
+      return 'Enter a valid email address that can receive messages.';
+    case 'invalid_credentials':
+      return 'The email or password is incorrect.';
+    case 'weak_password':
+      return 'Choose a stronger password and try again.';
+    default:
+      return fallback;
+  }
+}
+
 export function getAccountRestrictionMessage(
   profile: UserProfile | null,
   now = Date.now(),

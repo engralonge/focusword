@@ -64,6 +64,7 @@ src/
 3. Apply all files in `supabase/migrations` in numeric order
 4. Add `focusword://auth/callback` and `focusword://auth/reset-password` to the Auth redirect URLs
 5. Enable Email auth and require email verification in Authentication settings
+6. Configure production email delivery by following [RESEND_SMTP_SETUP.md](RESEND_SMTP_SETUP.md)
 
 ## AI summaries
 

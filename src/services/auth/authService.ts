@@ -8,6 +8,7 @@ import {
   validatePassword,
   validateProfile,
   getAccountRestrictionMessage,
+  getAuthErrorMessage,
 } from '@/utils/auth';
 
 export type AuthSession = {
@@ -45,7 +46,7 @@ export async function signInWithEmail(
     password,
   });
   if (error) {
-    return { session: null, error: error.message };
+    return { session: null, error: getAuthErrorMessage(error.code, error.message) };
   }
   if (!data.user) {
     return { session: null, error: 'No user returned' };
@@ -89,7 +90,7 @@ export async function signUpWithEmail(
     },
   });
   if (error) {
-    return { session: null, error: error.message };
+    return { session: null, error: getAuthErrorMessage(error.code, error.message) };
   }
   return {
     session: data.user && data.session
@@ -97,6 +98,23 @@ export async function signUpWithEmail(
       : null,
     error: null,
   };
+}
+
+export async function resendSignupConfirmation(email: string): Promise<string | null> {
+  const validationError = validateEmail(email);
+  if (validationError) return validationError;
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    return 'Supabase is not configured.';
+  }
+  const { error } = await supabase.auth.resend({
+    type: 'signup',
+    email: normalizeEmail(email),
+    options: {
+      emailRedirectTo: Linking.createURL('auth/callback'),
+    },
+  });
+  return error ? getAuthErrorMessage(error.code, error.message) : null;
 }
 
 export async function requestPasswordReset(email: string): Promise<string | null> {
@@ -109,7 +127,7 @@ export async function requestPasswordReset(email: string): Promise<string | null
   const { error } = await supabase.auth.resetPasswordForEmail(normalizeEmail(email), {
     redirectTo: Linking.createURL('auth/reset-password'),
   });
-  return error?.message ?? null;
+  return error ? getAuthErrorMessage(error.code, error.message) : null;
 }
 
 export async function updatePassword(password: string): Promise<string | null> {
@@ -260,6 +278,10 @@ export async function handleAuthCallback(url: string): Promise<string | null> {
 
   const normalizedUrl = url.replace('#', '?');
   const parsed = Linking.parse(normalizedUrl);
+  const callbackError = parsed.queryParams?.error_description ?? parsed.queryParams?.error;
+  if (typeof callbackError === 'string') {
+    return callbackError.replace(/\+/g, ' ');
+  }
   const accessToken = parsed.queryParams?.access_token;
   const refreshToken = parsed.queryParams?.refresh_token;
   if (typeof accessToken !== 'string' || typeof refreshToken !== 'string') {

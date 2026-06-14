@@ -19,7 +19,7 @@ type Nav = NativeStackNavigationProp<AuthStackParamList, 'SignUp'>;
 
 export function SignUpScreen() {
   const navigation = useNavigation<Nav>();
-  const { signUp } = useAuth();
+  const { signUp, resendConfirmation } = useAuth();
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,6 +27,7 @@ export function SignUpScreen() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [confirmationEmail, setConfirmationEmail] = useState<string | null>(null);
 
   const handleSignUp = async () => {
     const name = displayName.trim();
@@ -49,7 +50,22 @@ export function SignUpScreen() {
       setError(nextError);
       return;
     }
+    setConfirmationEmail(normalizedEmail);
     setMessage('Check your email to verify your account, then sign in.');
+  };
+
+  const handleResend = async () => {
+    if (!confirmationEmail) return;
+    setLoading(true);
+    setError(null);
+    setMessage(null);
+    const nextError = await resendConfirmation(confirmationEmail);
+    setLoading(false);
+    if (nextError) {
+      setError(nextError);
+      return;
+    }
+    setMessage('A new confirmation email has been sent.');
   };
 
   return (
@@ -109,6 +125,15 @@ export function SignUpScreen() {
         disabled={loading}
         onPress={() => void handleSignUp()}
       />
+      {confirmationEmail ? (
+        <Button
+          title={loading ? 'Sending...' : 'Resend confirmation email'}
+          variant="secondary"
+          className="mt-3"
+          disabled={loading}
+          onPress={() => void handleResend()}
+        />
+      ) : null}
       <Pressable className="mt-4 items-center" onPress={() => navigation.navigate('SignIn')}>
         <Text variant="caption">Already have an account? <Text className="text-brand-light">Sign in</Text></Text>
       </Pressable>
